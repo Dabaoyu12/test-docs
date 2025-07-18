@@ -667,7 +667,7 @@ create external table if not exists dim_user_address_zip(
     stored as orc
     location '/bigdata_warehouse/tms01/dim/dim_user_address_zip'
     tblproperties ('orc.compress'='snappy');
-
+-- 1
 ----首日
 insert overwrite table dim_user_address_zip partition (ds='99991231')
 select
