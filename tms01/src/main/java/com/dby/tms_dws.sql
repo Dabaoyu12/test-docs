@@ -1,3 +1,5 @@
+set hive.exec.mode.local.auto=True;
+use tms;
 drop table if exists dws_trade_org_cargo_type_order_1d;
 create external table dws_trade_org_cargo_type_order_1d(
 	`org_id` bigint comment '机构ID',

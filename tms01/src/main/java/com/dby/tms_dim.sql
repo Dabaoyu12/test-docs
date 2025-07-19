@@ -487,18 +487,16 @@ insert overwrite table dim_user_zip
 select after.id,
        after.login_name,
        after.nick_name,
-       md5(after.passwd)                                                                                    passwd,
-       md5(after.real_name)                                                                                 realname,
+       md5(after.passwd) passwd,
+       md5(after.real_name) realname,
        md5(if(after.phone_num regexp '^(13[0-9]|14[01456879]|15[0-35-9]|16[2567]|17[0-8]|18[0-9]|19[0-35-9])\\d{8}$',
-              after.phone_num, null))                                                                       phone_num,
+              after.phone_num, null)) phone_num,
        md5(if(after.email regexp '^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$', after.email, null)) email,
        after.user_level,
-       date_add('1970-01-01', cast(after.birthday as int))                                                  birthday,
+       date_add('1970-01-01', cast(after.birthday as int)) birthday,
        after.gender,
-       date_format(from_utc_timestamp(
-                           cast(after.create_time as bigint), 'UTC'),
-                   'yyyy-MM-dd')                                                                            start_date,
-       '9999-12-31'                                                                                         end_date
+       date_format(from_utc_timestamp(cast(after.create_time as bigint), 'UTC'),'yyyy-MM-dd') tart_date,
+       '9999-12-31' end_date
 from ods_user_info as after
 where  after.is_deleted = '0';
 

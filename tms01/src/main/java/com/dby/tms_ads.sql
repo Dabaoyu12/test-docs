@@ -1,3 +1,5 @@
+set hive.exec.mode.local.auto=True;
+use tms;
 drop table if exists ads_city_stats;
 create external table ads_city_stats(
   `dt` string COMMENT '统计日期',
@@ -1179,17 +1181,6 @@ where dt = '2025-07-11'
 group by truck_model_type,
          truck_model_type_name,
          recent_days;
-
-
-
-
-
-
-
-
-
-
-
 
 
 
