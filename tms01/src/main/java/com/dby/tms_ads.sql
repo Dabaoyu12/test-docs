@@ -893,18 +893,18 @@ select nvl(org_order_1d.dt, org_trans_1d.dt)                   dt,
        trans_finish_dur_sec,
        avg_trans_finish_distance,
        avg_trans_finish_dur_sec
-from (select '2025-07-11'      dt,
+from (select '2025-07-09'      dt,
              1                 recent_days,
              org_id,
              org_name,
              sum(order_count)  order_count,
              sum(order_amount) order_amount
       from dws_trade_org_cargo_type_order_1d
-      where dt = '2025-07-11'
+      where dt = '2025-07-09'
       group by org_id,
                org_name) org_order_1d
          full outer join
-     (select '2025-07-11'                                         dt,
+     (select '2025-07-09'                                         dt,
              org_id,
              org_name,
              1                                                    recent_days,
@@ -914,7 +914,7 @@ from (select '2025-07-11'      dt,
              sum(trans_finish_distance) / sum(trans_finish_count) avg_trans_finish_distance,
              sum(trans_finish_dur_sec) / sum(trans_finish_count)  avg_trans_finish_dur_sec
       from dws_trans_org_truck_model_type_trans_finish_1d
-      where dt = '2025-07-11'
+      where dt = '2025-07-09'
       group by org_id,
                org_name
      ) org_trans_1d
@@ -934,19 +934,19 @@ select org_order_nd.dt,
        trans_finish_dur_sec,
        avg_trans_finish_distance,
        avg_trans_finish_dur_sec
-from (select '2025-07-11'      dt,
+from (select '2025-07-09'      dt,
              recent_days,
              org_id,
              org_name,
              sum(order_count)  order_count,
              sum(order_amount) order_amount
       from dws_trade_org_cargo_type_order_nd
-      where dt = '2025-07-11'
+      where dt = '2025-07-09'
       group by org_id,
                org_name,
                recent_days) org_order_nd
          join
-     (select '2025-07-11'                                         dt,
+     (select '2025-07-09'                                         dt,
              recent_days,
              org_id,
              org_name,
@@ -956,7 +956,7 @@ from (select '2025-07-11'      dt,
              sum(trans_finish_distance) / sum(trans_finish_count) avg_trans_finish_distance,
              sum(trans_finish_dur_sec) / sum(trans_finish_count)  avg_trans_finish_dur_sec
       from dws_trans_shift_trans_finish_nd
-      where dt = '2025-07-11'
+      where dt = '2025-07-09'
       group by org_id,
                org_name,
                recent_days
@@ -1167,7 +1167,7 @@ select dt,
        avg_trans_finish_dur_sec
 from ads_truck_stats
 union
-select '2025-07-11'                                         dt,
+select '2025-07-11' dt,
        recent_days,
        truck_model_type,
        truck_model_type_name,
@@ -1181,7 +1181,4 @@ where dt = '2025-07-11'
 group by truck_model_type,
          truck_model_type_name,
          recent_days;
-
-
-
 
