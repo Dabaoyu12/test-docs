@@ -61,7 +61,7 @@ from (select org_id,
                    org_name,
                    region_id
             from dim_organ_full
-            where dt = '2025-07-11') org
+            where ds = '20250719') org
            on distinct_detail.sender_district_id = org.region_id
       group by org_id,
                org_name,
@@ -73,7 +73,7 @@ from (select org_id,
     select id,
            name
     from dim_region_full
-    where dt = '2025-07-11'
+    where ds = '20250719'
 ) region on city_id = region.id;
 
 
@@ -139,26 +139,26 @@ from (select order_id,
              org_name,
              region_id district_id
       from dim_organ_full
-      where dt = '2025-07-11') organ
+      where ds = '20250719') organ
      on detail.receiver_district_id = organ.district_id
          left join
      (select id,
              parent_id city_id
       from dim_region_full
-      where dt = '2025-07-11') district
+      where ds = '20250719') district
      on district_id = district.id
          left join
      (select id,
              name,
              parent_id province_id
       from dim_region_full
-      where dt = '2025-07-11') city
+      where ds = '20250719') city
      on city_id = city.id
          left join
      (select id,
              name
       from dim_region_full
-      where dt = '2025-07-11') province
+      where ds = '20250719') province
      on province_id = province.id
 group by org_id,
          org_name,
@@ -219,27 +219,27 @@ from (select order_id,
                    org_name,
                    region_id
             from dim_organ_full
-            where dt = '2025-07-11') organ
+            where ds = '20250719') organ
            on detail.sender_district_id = organ.region_id
                left join
            (select id,
                    parent_id
             from dim_region_full
-            where dt = '2025-07-11') district
+            where ds = '20250719') district
            on region_id = district.id
                left join
            (select id   city_id,
                    name city_name,
                    parent_id
             from dim_region_full
-            where dt = '2025-07-11') city
+            where ds = '20250719') city
            on district.parent_id = city_id
                left join
            (select id   province_id,
                    name province_name,
                    parent_id
             from dim_region_full
-            where dt = '2025-07-11') province
+            where ds = '20250719') province
            on city.parent_id = province_id
       group by order_id,
                org_id,
@@ -297,28 +297,28 @@ from (select org_id,
              org_level,
              region_id
       from dim_organ_full
-      where dt = '2025-07-11') org
+      where ds = '20250719') org
      on org_id = org.id
          left join
      (select id,
              name,
              parent_id
       from dim_region_full
-      where dt = '2025-07-11') city_for_level1
+      where ds = '20250719') city_for_level1
      on region_id = city_for_level1.id
          left join
      (select id,
              name,
              parent_id
       from dim_region_full
-      where dt = '2025-07-11') province_for_level1
+      where ds = '20250719') province_for_level1
      on city_for_level1.parent_id = province_for_level1.id
          left join
      (select id,
              name,
              parent_id
       from dim_region_full
-      where dt = '2025-07-11') province_for_level2
+      where ds = '20250719') province_for_level2
      on province_for_level1.parent_id = province_for_level2.id;
 
 
@@ -362,7 +362,7 @@ from (select id,
              truck_model_type,
              truck_model_type_name
       from dim_truck_full
-      where dt = '2025-07-11') truck_info
+      where ds = '20250719') truck_info
      on trans_finish.truck_id = truck_info.id
 group by org_id,
          org_name,
@@ -390,7 +390,7 @@ create external table dws_trade_org_cargo_type_order_nd(
 
 
 insert overwrite table dws_trade_org_cargo_type_order_nd
-    partition (dt = '2025-07-11')
+    partition (dt = '20250719')
 select org_id,
        org_name,
        city_id,
@@ -402,7 +402,7 @@ select org_id,
        sum(order_amount) order_amount
 from dws_trade_org_cargo_type_order_1d lateral view
     explode(array(7, 30)) tmp as recent_days
-where dt >= date_add('2025-07-11', -recent_days + 1)
+where dt >= date_add('20250719', -recent_days + 1)
 group by org_id,
          org_name,
          city_id,
@@ -424,7 +424,7 @@ create external table dws_trans_bound_finish_td(
 
 
 insert overwrite table dws_trans_bound_finish_td
-    partition (dt = '2025-07-11')
+    partition (dt = '20250719')
 select count(order_id)   order_count,
        sum(order_amount) order_amount
 from (select order_id,
@@ -446,13 +446,13 @@ create external table dws_trans_dispatch_nd(
 	tblproperties('orc.compress'='snappy');
 
 insert overwrite table dws_trans_dispatch_nd
-    partition (dt = '2025-07-11')
+    partition (dt = '20250719')
 select recent_days,
        sum(order_count)  order_count,
        sum(order_amount) order_amount
 from dws_trans_dispatch_1d lateral view
     explode(array(7, 30)) tmp as recent_days
-where dt >= date_add('2025-07-11', -recent_days + 1)
+where dt >= date_add('20250719', -recent_days + 1)
 group by recent_days;
 
 
@@ -469,7 +469,7 @@ create external table dws_trans_dispatch_td(
 
 
 insert overwrite table dws_trans_dispatch_td
-    partition (dt = '2025-07-11')
+    partition (dt = '20250719')
 select sum(order_count)  order_count,
        sum(order_amount) order_amount
 from dws_trans_dispatch_1d;
@@ -493,7 +493,7 @@ create external table dws_trans_org_deliver_suc_nd(
 
 
 insert overwrite table dws_trans_org_deliver_suc_nd
-    partition (dt = '2025-07-11')
+    partition (dt = '20250719')
 select org_id,
        org_name,
        city_id,
@@ -504,7 +504,7 @@ select org_id,
        sum(order_count) order_count
 from dws_trans_org_deliver_suc_1d lateral view
     explode(array(7, 30)) tmp as recent_days
-where dt >= date_add('2025-07-11', -recent_days + 1)
+where dt >= date_add('20250719', -recent_days + 1)
 group by org_id,
          org_name,
          city_id,
@@ -533,7 +533,7 @@ create external table dws_trans_org_receive_nd(
 	tblproperties ('orc.compress'='snappy');
 
 insert overwrite table dws_trans_org_receive_nd
-    partition (dt = '2025-07-11')
+    partition (dt = '20250719')
 select org_id,
        org_name,
        city_id,
@@ -545,7 +545,7 @@ select org_id,
        sum(order_amount) order_amount
 from dws_trans_org_receive_1d
          lateral view explode(array(7, 30)) tmp as recent_days
-where dt >= date_add('2025-07-11', -recent_days + 1)
+where dt >= date_add('20250719', -recent_days + 1)
 group by org_id,
          org_name,
          city_id,
@@ -574,7 +574,7 @@ create external table dws_trans_org_sort_nd(
 
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert overwrite table dws_trans_org_sort_nd
-    partition (dt = '2025-07-11')
+    partition (dt = '20250719')
 select org_id,
        org_name,
        city_id,
@@ -585,7 +585,7 @@ select org_id,
        sum(sort_count) sort_count
 from dws_trans_org_sort_1d lateral view
     explode(array(7, 30)) tmp as recent_days
-where dt >= date_add('2025-07-11', -recent_days + 1)
+where dt >= date_add('20250719', -recent_days + 1)
 group by org_id,
          org_name,
          city_id,
@@ -625,7 +625,7 @@ create external table dws_trans_shift_trans_finish_nd(
 
 
 insert overwrite table dws_trans_shift_trans_finish_nd
-    partition (dt = '2025-07-11')
+    partition (dt = '20250719')
 select shift_id,
        if(org_level = 1, first.region_id, city.id)     city_id,
        if(org_level = 1, first.region_name, city.name) city_name,
@@ -662,7 +662,7 @@ from (select recent_days,
              sum(if(actual_end_time > estimate_end_time, 1, 0)) trans_finish_delay_count
       from dwd_trans_trans_finish_inc lateral view
           explode(array(7, 30)) tmp as recent_days
-      where dt >= date_add('2025-07-11', -recent_days + 1)
+      where dt >= date_add('20250719', -recent_days + 1)
       group by recent_days,
                shift_id,
                line_id,
@@ -679,33 +679,33 @@ from (select recent_days,
              region_id,
              region_name
       from dim_organ_full
-      where dt = '2025-07-11'
+      where ds = '20250719'
      ) first
      on aggregated.org_id = first.id
          left join
      (select id,
              parent_id
       from dim_region_full
-      where dt = '2025-07-11'
+      where ds = '20250719'
      ) parent
      on first.region_id = parent.id
          left join
      (select id,
              name
       from dim_region_full
-      where dt = '2025-07-11'
+      where ds = '20250719'
      ) city
      on parent.parent_id = city.id
          left join
      (select id,
              line_name
       from dim_shift_full
-      where dt = '2025-07-11') for_line_name
+      where ds = '20250719') for_line_name
      on shift_id = for_line_name.id
          left join (
     select id,
            truck_model_type,
            truck_model_type_name
     from dim_truck_full
-    where dt = '2025-07-11'
+    where ds = '20250719'
 ) truck_info on truck_id = truck_info.id;

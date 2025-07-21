@@ -39,7 +39,7 @@ create external table dwd_trade_order_detail_inc(
     tblproperties('orc.compress' = 'snappy');
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert overwrite table dwd_trade_order_detail_inc
-    partition (dt="2025-07-09")
+    partition (dt="20250719")
 select cargo.id,
        order_id,
        cargo_type,
@@ -167,7 +167,7 @@ create external table dwd_trade_pay_suc_detail_inc(
     tblproperties('orc.compress' = 'snappy');
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert overwrite table dwd_trade_pay_suc_detail_inc
-    partition (dt="2025-07-09")
+    partition (dt="20250719")
 select cargo.id,
        order_id,
        cargo_type,
@@ -300,7 +300,7 @@ create external table dwd_trade_order_cancel_detail_inc(
     tblproperties('orc.compress' = 'snappy');
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert overwrite table dwd_trade_order_cancel_detail_inc
-    partition (dt="2025-07-09")
+    partition (dt="20250719")
 select cargo.id,
        order_id,
        cargo_type,
@@ -427,7 +427,7 @@ create external table dwd_trans_receive_detail_inc(
     tblproperties('orc.compress' = 'snappy');
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert overwrite table dwd_trans_receive_detail_inc
-    partition (dt="2025-07-09")
+    partition (dt="20250719")
 select cargo.id,
        order_id,
        cargo_type,
@@ -699,7 +699,7 @@ create external table dwd_trans_bound_finish_detail_inc(
     tblproperties('orc.compress' = 'snappy');
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert overwrite table dwd_trans_bound_finish_detail_inc
-    partition (dt="2025-07-09")
+    partition (dt="20250719")
 select cargo.id,
        order_id,
        cargo_type,
@@ -836,7 +836,7 @@ create external table dwd_trans_deliver_suc_detail_inc(
     tblproperties('orc.compress' = 'snappy');
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert overwrite table dwd_trans_deliver_suc_detail_inc
-    partition (dt="2025-07-09")
+    partition (dt="20250719")
 select cargo.id,
        order_id,
        cargo_type,
@@ -973,7 +973,7 @@ create external table dwd_trans_sign_detail_inc(
     tblproperties('orc.compress' = 'snappy');
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert overwrite table dwd_trans_sign_detail_inc
-    partition (dt="2025-07-09")
+    partition (dt="20250719")
 select cargo.id,
        order_id,
        cargo_type,
@@ -1264,8 +1264,8 @@ select info.id,
        estimated_time ,
        actual_distance,
        finish_dur_sec,
-       '2025-07-09',
-       '2025-07-09'
+       '20250719',
+       '20250719'
 from (select after.id,
              after.shift_id,
              after.line_id,
@@ -1316,7 +1316,7 @@ create external table dwd_bound_inbound_inc(
     tblproperties('orc.compress' = 'snappy');
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert overwrite table dwd_bound_inbound_inc
-    partition (dt= '2025-07-09')
+    partition (dt= '20250719')
 select after.id,
        after.order_id,
        after.org_id,
@@ -1341,7 +1341,7 @@ create external table dwd_bound_sort_inc(
     tblproperties('orc.compress' = 'snappy');
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert overwrite table dwd_bound_sort_inc
-    partition (dt="2025-07-09")
+    partition (dt="20250719")
 select after.id,
        after.order_id,
        after.org_id,
@@ -1367,7 +1367,7 @@ create external table dwd_bound_outbound_inc(
     tblproperties('orc.compress' = 'snappy');
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert overwrite table dwd_bound_outbound_inc
-    partition (dt="2025-07-09")
+    partition (dt="20250719")
 select after.id,
        after.order_id,
        after.org_id,
