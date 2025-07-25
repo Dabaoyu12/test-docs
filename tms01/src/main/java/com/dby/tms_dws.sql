@@ -61,7 +61,7 @@ from (select org_id,
                    org_name,
                    region_id
             from dim_organ_full
-            where ds = '20250719') org
+            where dt = '20250719') org
            on distinct_detail.sender_district_id = org.region_id
       group by org_id,
                org_name,
@@ -73,7 +73,7 @@ from (select org_id,
     select id,
            name
     from dim_region_full
-    where ds = '20250719'
+    where  dt= '20250719'
 ) region on city_id = region.id;
 
 
@@ -139,26 +139,26 @@ from (select order_id,
              org_name,
              region_id district_id
       from dim_organ_full
-      where ds = '20250719') organ
+      where dt = '20250719') organ
      on detail.receiver_district_id = organ.district_id
          left join
      (select id,
              parent_id city_id
       from dim_region_full
-      where ds = '20250719') district
+      where dt = '20250719') district
      on district_id = district.id
          left join
      (select id,
              name,
              parent_id province_id
       from dim_region_full
-      where ds = '20250719') city
+      where dt = '20250719') city
      on city_id = city.id
          left join
      (select id,
              name
       from dim_region_full
-      where ds = '20250719') province
+      where dt = '20250719') province
      on province_id = province.id
 group by org_id,
          org_name,
@@ -219,27 +219,27 @@ from (select order_id,
                    org_name,
                    region_id
             from dim_organ_full
-            where ds = '20250719') organ
+            where dt = '20250719') organ
            on detail.sender_district_id = organ.region_id
                left join
            (select id,
                    parent_id
             from dim_region_full
-            where ds = '20250719') district
+            where dt = '20250719') district
            on region_id = district.id
                left join
            (select id   city_id,
                    name city_name,
                    parent_id
             from dim_region_full
-            where ds = '20250719') city
+            where dt = '20250719') city
            on district.parent_id = city_id
                left join
            (select id   province_id,
                    name province_name,
                    parent_id
             from dim_region_full
-            where ds = '20250719') province
+            where dt = '20250719') province
            on city.parent_id = province_id
       group by order_id,
                org_id,
@@ -660,7 +660,7 @@ from (select recent_days,
              sum(finish_dur_sec)                                trans_finish_dur_sec,
              sum(order_num)                                     trans_finish_order_count,
              sum(if(actual_end_time > estimate_end_time, 1, 0)) trans_finish_delay_count
-      from dwd_trans_trans_finish_inc lateral view
+      from dwd_trans_trans_finis lateral view
           explode(array(7, 30)) tmp as recent_days
       where dt >= date_add('20250719', -recent_days + 1)
       group by recent_days,
