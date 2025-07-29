@@ -297,28 +297,28 @@ from (select org_id,
              org_level,
              region_id
       from dim_organ_full
-      where ds = '20250719') org
+      where dt = '20250719') org
      on org_id = org.id
          left join
      (select id,
              name,
              parent_id
       from dim_region_full
-      where ds = '20250719') city_for_level1
+      where dt = '20250719') city_for_level1
      on region_id = city_for_level1.id
          left join
      (select id,
              name,
              parent_id
       from dim_region_full
-      where ds = '20250719') province_for_level1
+      where dt = '20250719') province_for_level1
      on city_for_level1.parent_id = province_for_level1.id
          left join
      (select id,
              name,
              parent_id
       from dim_region_full
-      where ds = '20250719') province_for_level2
+      where dt = '20250719') province_for_level2
      on province_for_level1.parent_id = province_for_level2.id;
 
 
@@ -356,13 +356,13 @@ from (select id,
              actual_distance,
              finish_dur_sec,
              dt
-      from dwd_trans_trans_finish_inc) trans_finish
+      from dwd_trade_trans_finish_inc) trans_finish
          left join
      (select id,
              truck_model_type,
              truck_model_type_name
       from dim_truck_full
-      where ds = '20250719') truck_info
+      where dt = '20250719') truck_info
      on trans_finish.truck_id = truck_info.id
 group by org_id,
          org_name,
@@ -660,7 +660,7 @@ from (select recent_days,
              sum(finish_dur_sec)                                trans_finish_dur_sec,
              sum(order_num)                                     trans_finish_order_count,
              sum(if(actual_end_time > estimate_end_time, 1, 0)) trans_finish_delay_count
-      from dwd_trans_trans_finis lateral view
+      from dwd_trade_trans_finish_inc lateral view
           explode(array(7, 30)) tmp as recent_days
       where dt >= date_add('20250719', -recent_days + 1)
       group by recent_days,
@@ -679,33 +679,33 @@ from (select recent_days,
              region_id,
              region_name
       from dim_organ_full
-      where ds = '20250719'
+      where dt = '20250719'
      ) first
      on aggregated.org_id = first.id
          left join
      (select id,
              parent_id
       from dim_region_full
-      where ds = '20250719'
+      where dt = '20250719'
      ) parent
      on first.region_id = parent.id
          left join
      (select id,
              name
       from dim_region_full
-      where ds = '20250719'
+      where dt = '20250719'
      ) city
      on parent.parent_id = city.id
          left join
      (select id,
              line_name
       from dim_shift_full
-      where ds = '20250719') for_line_name
+      where dt = '20250719') for_line_name
      on shift_id = for_line_name.id
          left join (
     select id,
            truck_model_type,
            truck_model_type_name
     from dim_truck_full
-    where ds = '20250719'
+    where dt = '20250719'
 ) truck_info on truck_id = truck_info.id;
