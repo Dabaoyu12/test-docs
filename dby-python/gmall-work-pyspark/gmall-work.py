@@ -1,145 +1,78 @@
-import os
-import sys
-# 强制指定Python路径（使用sys.executable获取当前运行的Python解释器）
-os.environ["PYSPARK_PYTHON"] = sys.executable
-os.environ["PYSPARK_DRIVER_PYTHON"] = sys.executable
-
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, countDistinct, count, avg, when, to_timestamp
-import datetime
-import random
+from pyspark.sql.functions import col, when, current_date, lit, to_timestamp, rand, concat
 
-# 初始化SparkSession（单线程模式）
+# 初始化SparkSession
 spark = SparkSession.builder \
-    .appName("电商数仓-极简模式") \
-    .master("local[1]")  # 强制单线程运行，避免资源竞争 \
-.config("spark.sql.shuffle.partitions", "1")  # 仅1个分区 \
-.config("spark.python.worker.timeout", "1200") \
-    .config("spark.driver.memory", "1g") \
-    .config("spark.executor.memory", "1g") \
-    .config("spark.driver.maxResultSize", "512m") \
-    .config("spark.python.worker.memory", "512m")  # 限制Python worker内存 \
-.getOrCreate()
+    .appName("Create Dim Page Visit Log") \
+    .enableHiveSupport() \
+    .config("hive.metastore.uris", "thrift://cdh01:9083") \
+    .getOrCreate()
 
 
-def generate_mock_data():
-    """生成最小量数据（确保能运行）"""
-    total_users = 50    # 仅50用户
-    total_pages = 10    # 10个页面
-    start_date = "2025-01-25"  # 缩短日期范围
-    end_date = "2025-01-26"
+# 先检查数据库是否存在，如果不存在则创建
+spark.sql("CREATE DATABASE IF NOT EXISTS gmall_work")
 
-    # 生成日期列表（仅2天）
-    date_list = [
-        datetime.datetime.strptime(start_date, "%Y-%m-%d") + datetime.timedelta(days=i)
-        for i in range(2)
-    ]
-    date_str_list = [d.strftime("%Y-%m-%d") for d in date_list]
-
-    # 页面类型与名称（极度简化）
-    page_types = ["店铺页", "商品详情页"]
-    page_type_map = {i: random.choice(page_types) for i in range(total_pages)}
-    page_names = {
-        "店铺页": ["首页", "活动页"],
-        "商品详情页": ["商品1详情页", "商品2详情页"]
-    }
-    page_name_map = {
-        i: random.choice(page_names[page_type_map[i]])
-        for i in range(total_pages)
-    }
-
-    # 生成数据（每个用户仅1条记录）
-    data = []
-    for user_id in range(total_users):
-        dt = random.choice(date_str_list)
-        page_id = random.randint(0, total_pages - 1)
-        data.append((
-            user_id,
-            page_id,
-            page_type_map[page_id],
-            page_name_map[page_id],
-            -1,  # 简化：全部无来源页面
-            f"{dt} 12:00:00",  # 固定时间，减少随机性
-            0,  # 简化：全部不下单
-            60,  # 固定停留时间
-            "wireless" if random.random() > 0.5 else "pc",
-            dt
-        ))
-
-    # 创建DataFrame
-    df = spark.createDataFrame(data, [
-        "user_id", "page_id", "page_type", "page_name", "refer_page_id",
-        "visit_time", "is_order", "stay_time", "device_type", "dt"
-    ]).withColumn("visit_time", to_timestamp(col("visit_time"), "yyyy-MM-dd HH:mm:ss"))
-
-    return df
+# 检查源表是否存在
+try:
+    # 尝试读取表
+    spark.table("gmall_work.ods_page_visit_log")
+    print("源表存在，可以正常读取")
+except:
+    print("源表不存在，创建测试表并插入测试数据")
+    # 创建测试表
 
 
-def calculate_wireless_indicators(clean_df, time_range="7days"):
-    """简化的无线端指标计算"""
-    end_date = "2025-01-26"
-    start_date = "2025-01-25"  # 仅2天数据
-
-    wireless_df = clean_df \
-        .filter(col("device_type") == "wireless") \
-        .filter(col("dt").between(start_date, end_date)) \
-        .cache()
-
-    # 仅保留核心指标
-    entrance_df = wireless_df \
-        .groupBy("page_id", "page_name") \
-        .agg(
-        countDistinct("user_id").alias("访客数")
-    ) \
-        .orderBy(col("访客数").desc())
-
-    wireless_df.unpersist()
-    return {"entrance_indicators": entrance_df}
+# 之后继续原来的处理逻辑...
+source_df = spark.table("gmall_work.ods_page_visit_log")
 
 
-def calculate_pc_indicators(clean_df):
-    """简化的PC端指标计算"""
-    pc_df = clean_df \
-        .filter(col("device_type") == "pc") \
-        .cache()
+# 初始化SparkSession
+spark = SparkSession.builder \
+    .appName("Create Dim Page Visit Log") \
+    .enableHiveSupport() \
+    .getOrCreate()
 
-    # 仅保留核心指标
-    pc_page_rank = pc_df \
-        .groupBy("page_id", "page_name") \
-        .agg(
-        count("page_id").alias("浏览量")
-    ) \
-        .orderBy(col("浏览量").desc())
+# 从Hive的gmall_work库读取源表数据
+# 假设源表名为ods_page_visit_log，实际使用时请替换为真实表名
+source_df = spark.table("gmall_work.ods_page_visit_log")
 
-    pc_df.unpersist()
-    return {"page_rank": pc_page_rank}
+# 使用DSL风格处理数据，创建dim层数据
+dim_page_visit_log = source_df \
+.select(
+    col("log_id"),
+    col("session_id"),
+    col("user_id"),
+    # 处理设备类型，补充默认值
+    when(col("device_type").isNull(), "unknown").otherwise(col("device_type")).alias("device_type"),
+    # 处理页面类型，补充默认值
+    when(col("page_type").isNull(), "other").otherwise(col("page_type")).alias("page_type"),
+    col("page_url"),
+    # 处理来源URL，空值填充为直接访问
+    when(col("referer_url").isNull() | (col("referer_url") == ""), "direct").otherwise(col("referer_url")).alias("referer_url"),
+    # 转换访问时间为时间戳格式
+    to_timestamp(col("visit_time"), "yyyy-MM-dd HH:mm:ss").alias("visit_time"),
+    # 处理停留时长，负数或空值填充为0
+    when((col("stay_duration").isNull()) | (col("stay_duration") < 0), 0).otherwise(col("stay_duration")).alias("stay_duration"),
+    # 处理是否下单标识，空值填充为0
+    when(col("is_order").isNull(), 0).otherwise(col("is_order")).alias("is_order"),
+    col("dt"),
+    col("ds")
+) \
+.filter(col("log_id").isNotNull()) \
+.withColumn("load_time", current_date())
 
 
-if __name__ == "__main__":
-    try:
-        print("开始生成极小量模拟数据...")
-        mock_data = generate_mock_data()
+filled_dim_df = dim_page_visit_log \
+.withColumn("user_id", when(col("user_id").isNull(), concat(lit("user_"), rand().cast("string").substr(3, 8))).otherwise(col("user_id"))) \
+.withColumn("session_id", when(col("session_id").isNull(), concat(lit("session_"), rand().cast("string").substr(3, 10))).otherwise(col("session_id")))
 
-        # 先显示部分数据确认格式正确
-        print("\n数据样例:")
-        mock_data.show(3)
+# 将数据写入dim层表
+filled_dim_df.write \
+    .mode("overwrite") \
+    .partitionBy("dt", "ds") \
+    .saveAsTable("gmall_work.dim_page_visit_log")
 
-        # 计算数据量（使用简化方式）
-        print(f"\n生成模拟数据量: {mock_data.count()} 条")
+print("Dim层表创建完成，数据已填充")
 
-        # 简化计算逻辑
-        print("\n计算无线端指标...")
-        wireless_results = calculate_wireless_indicators(mock_data)
-        print("无线端页面访客数TOP3:")
-        wireless_results["entrance_indicators"].show(3)
-
-        print("\n计算PC端指标...")
-        pc_results = calculate_pc_indicators(mock_data)
-        print("PC端页面浏览量TOP3:")
-        pc_results["page_rank"].show(3)
-
-    except Exception as e:
-        print(f"\n错误: {str(e)}")
-    finally:
-        spark.stop()
-        print("\nSparkSession已关闭")
+# 停止SparkSession
+spark.stop()
