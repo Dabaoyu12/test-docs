@@ -10,9 +10,9 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>tms01</module>
-        <module>Real-time</module>
+        <module>Real-Time</module>
         <module>stream-common</module>
+        <module>aa</module>
     </modules>
 
     <properties>
