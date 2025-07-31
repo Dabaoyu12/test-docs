@@ -12,7 +12,7 @@
     <modules>
         <module>Real-Time</module>
         <module>stream-common</module>
-        <module>aa</module>
+        <module>work_order</module>
     </modules>
 
     <properties>
