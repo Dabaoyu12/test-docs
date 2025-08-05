@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS dws_product_diagnosis (
     category_name VARCHAR(100) NOT NULL COMMENT '类目名称',
     brand_name VARCHAR(100) NOT NULL COMMENT '品牌名称',
 
-    -- 五维指标得分
     traffic_score DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '流量获取得分',
     conversion_score DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '转化行为得分',
     engagement_score DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '内容营销得分',
@@ -22,12 +21,10 @@ CREATE TABLE IF NOT EXISTS dws_product_diagnosis (
     total_score DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '综合得分',
     grade CHAR(1) NOT NULL COMMENT '评级(A/B/C/D)',
 
-    -- 竞品对比
     market_avg_score DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '竞品平均分',
     traffic_score_diff DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '流量得分差值',
     conversion_score_diff DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '转化得分差值',
 
-    -- 关键二级指标
     uv_count BIGINT NOT NULL DEFAULT 0 COMMENT '总访客数',
     pay_conversion_rate DECIMAL(5,4) NOT NULL DEFAULT 0 COMMENT '支付转化率',
     cart_conversion_rate DECIMAL(5,4) NOT NULL DEFAULT 0 COMMENT '加购转化率',
@@ -42,7 +39,6 @@ CREATE TABLE IF NOT EXISTS dws_product_grade_diagnosis (
     grade CHAR(1) NOT NULL COMMENT '商品评级(A/B/C/D)',
     date_key DATE NOT NULL COMMENT '日期',
 
-    -- 五维指标平均分
     avg_traffic_score DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '平均流量得分',
     avg_conversion_score DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '平均转化得分',
     avg_engagement_score DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '平均内容得分',
@@ -50,17 +46,15 @@ CREATE TABLE IF NOT EXISTS dws_product_grade_diagnosis (
     avg_service_score DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '平均服务得分',
     avg_total_score DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '平均综合得分',
 
-    -- 分布统计
     product_count INT NOT NULL DEFAULT 0 COMMENT '商品数量',
     top_product_id BIGINT NULL COMMENT 'TOP商品ID',
     top_product_name VARCHAR(255) NULL COMMENT 'TOP商品名称',
     top_score DECIMAL(5,2) NULL COMMENT 'TOP商品得分',
 
-    -- 竞品对比
     market_avg_score DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '竞品平均分',
     avg_score_diff DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '平均分差值',
 
-                                                           PRIMARY KEY (grade, date_key)
+PRIMARY KEY (grade, date_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品等级诊断宽表（分层）';
 
 
@@ -87,10 +81,9 @@ SELECT
     e.total_score,
     e.grade,
     e.market_avg_score,
-    -- 计算与竞品的差值
+
     e.traffic_score - e.market_avg_score AS traffic_score_diff,
     e.conversion_score - e.market_avg_score AS conversion_score_diff,
-    -- 关键二级指标
     t.total_uv AS uv_count,
     c.pay_conversion_rate,
     c.cart_conversion_rate,
@@ -103,12 +96,12 @@ FROM dwd_product_evaluation e
          JOIN dwd_product_conversion c ON e.product_id = c.product_id AND e.date_key = c.date_key
          JOIN dwd_product_acquisition a ON e.product_id = a.product_id AND e.date_key = a.date_key
          JOIN dwd_product_service s ON e.product_id = s.product_id AND e.date_key = s.date_key
-WHERE e.date_key = CURRENT_DATE; -- 按天增量更新
+WHERE e.date_key = CURRENT_DATE;
 
 -- 2. 填充商品等级诊断宽表（分层）
 
 TRUNCATE TABLE dws_product_grade_diagnosis;
--- 创建临时表存储排序数据
+
 CREATE TEMPORARY TABLE tmp_ranked_data (
     product_id BIGINT,
     date_key DATE,
@@ -156,7 +149,6 @@ FROM (
              e.total_score,
              e.market_avg_score,
              p.product_name,
-             -- 使用用户变量生成排名
              @rank := IF(@current_grade = e.grade AND @current_date = e.date_key, @rank + 1, 1) AS rk,
              @current_grade := e.grade,
              @current_date := e.date_key
@@ -166,17 +158,17 @@ FROM (
          ORDER BY e.grade, e.date_key, e.total_score DESC
      ) ranked_data;
 
--- 创建临时表存储TOP商品信息 - 确保唯一性
+
 CREATE TEMPORARY TABLE tmp_top_products AS
 SELECT
     grade,
     date_key,
-    MAX(product_id) AS top_product_id,  -- 如果有多个，取最大ID
-    MAX(product_name) AS top_product_name, -- 如果有多个，取最大名称
+    MAX(product_id) AS top_product_id,
+    MAX(product_name) AS top_product_name,
     MAX(total_score) AS top_score
 FROM tmp_ranked_data
 WHERE rk = 1
-GROUP BY grade, date_key;  -- 确保每个等级和日期只有一行
+GROUP BY grade, date_key;
 
 -- 创建临时表存储聚合结果
 CREATE TEMPORARY TABLE tmp_aggregated AS
@@ -195,7 +187,7 @@ SELECT
 FROM tmp_ranked_data
 GROUP BY grade, date_key;
 
--- 插入最终数据 - 使用内连接确保唯一性
+-- 内连接确保唯一性
 INSERT INTO dws_product_grade_diagnosis (
     grade, date_key,
     avg_traffic_score, avg_conversion_score, avg_engagement_score,
@@ -223,7 +215,7 @@ FROM tmp_aggregated a
               ON a.grade = t.grade
                   AND a.date_key = t.date_key;
 
--- 清理临时表
+
 DROP TEMPORARY TABLE tmp_ranked_data;
 DROP TEMPORARY TABLE tmp_top_products;
 DROP TEMPORARY TABLE tmp_aggregated;

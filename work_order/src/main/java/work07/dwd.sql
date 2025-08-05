@@ -1,7 +1,7 @@
--- ====================================================================
+
 -- DWD层表创建脚本
 -- 工单编号：大数据-电商数仓-07-商品主题商品诊断看板
--- ====================================================================
+
 
 USE gmall_work_07;
 
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS dwd_product_evaluation (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品综合评分表（五维模型）';
 
 
--- 清空DWD表（保留表结构）
+
 TRUNCATE TABLE dwd_product_traffic;
 TRUNCATE TABLE dwd_product_conversion;
 TRUNCATE TABLE dwd_product_engagement;
@@ -87,39 +87,8 @@ TRUNCATE TABLE dwd_product_acquisition;
 TRUNCATE TABLE dwd_product_service;
 TRUNCATE TABLE dwd_product_evaluation;
 
--- 1. 直接生成流量获取数据（35%权重）
--- ====================================================================
--- 修复后的 DWD 层数据生成脚本
--- 工单编号：大数据-电商数仓-07-商品主题商品诊断看板
--- ====================================================================
 
-USE gmall_work_07;
-
--- 清空 DWD 表
-TRUNCATE TABLE dwd_product_traffic;
-TRUNCATE TABLE dwd_product_conversion;
-TRUNCATE TABLE dwd_product_engagement;
-TRUNCATE TABLE dwd_product_acquisition;
-TRUNCATE TABLE dwd_product_service;
-TRUNCATE TABLE dwd_product_evaluation;
-
--- 1. 生成流量获取数据（35%权重）
--- ====================================================================
--- 修复后的 DWD 层数据生成脚本
--- 工单编号：大数据-电商数仓-07-商品主题商品诊断看板
--- ====================================================================
-
-USE gmall_work_07;
-
--- 清空 DWD 表
-TRUNCATE TABLE dwd_product_traffic;
-TRUNCATE TABLE dwd_product_conversion;
-TRUNCATE TABLE dwd_product_engagement;
-TRUNCATE TABLE dwd_product_acquisition;
-TRUNCATE TABLE dwd_product_service;
-TRUNCATE TABLE dwd_product_evaluation;
-
--- 1. 生成流量获取数据（35%权重）
+-- 1. 生成流量获取数据
 INSERT INTO dwd_product_traffic (
     product_id, date_key, total_uv, hand_search_uv,
     juhuasuan_uv, direct_car_uv, traffic_score
@@ -131,7 +100,6 @@ SELECT
     hand_search_uv,
     juhuasuan_uv,
     direct_car_uv,
-    -- 流量得分计算（确保不超过100）
     LEAST(
             (total_uv * 0.00003 +
              hand_search_uv * 0.00002 +
@@ -143,10 +111,10 @@ FROM (
          SELECT
              product_id,
              date_key,
-             FLOOR(1000 + RAND()*5000) AS total_uv,             -- 总UV 1000-6000
-             FLOOR(100 + RAND()*4000) AS hand_search_uv,         -- 手淘搜索UV 100-4100
-             FLOOR(50 + RAND()*2000) AS juhuasuan_uv,            -- 聚划算UV 50-2050
-             FLOOR(30 + RAND()*1500) AS direct_car_uv            -- 直通车UV 30-1530
+             FLOOR(1000 + RAND()*5000) AS total_uv,
+             FLOOR(100 + RAND()*4000) AS hand_search_uv,
+             FLOOR(50 + RAND()*2000) AS juhuasuan_uv,
+             FLOOR(30 + RAND()*1500) AS direct_car_uv
          FROM (
                   SELECT DISTINCT p.product_id, d.date_key
                   FROM ods_dim_product p
@@ -155,7 +123,7 @@ FROM (
               ) product_dates
      ) uv_data;
 
--- 2. 生成转化行为数据（30%权重）
+-- 2. 生成转化行为数据
 INSERT INTO dwd_product_conversion (
     product_id, date_key, pay_conversion_rate, cart_conversion_rate,
     uv_value, collect_conversion_rate, conversion_score
@@ -167,7 +135,6 @@ SELECT
     cart_conversion_rate,
     uv_value,
     collect_conversion_rate,
-    -- 转化得分计算（确保不超过100）
     LEAST(
             (pay_conversion_rate * 12 +
              cart_conversion_rate * 9 +
@@ -179,10 +146,10 @@ FROM (
          SELECT
              product_id,
              date_key,
-             ROUND(0.01 + RAND()*0.15, 4) AS pay_conversion_rate,    -- 支付转化率 1%-16%
-             ROUND(0.05 + RAND()*0.25, 4) AS cart_conversion_rate,   -- 加购转化率 5%-30%
-             ROUND(10 + RAND()*90, 2) AS uv_value,                   -- UV价值 10-100元
-             ROUND(0.02 + RAND()*0.10, 4) AS collect_conversion_rate -- 收藏转化率 2%-12%
+             ROUND(0.01 + RAND()*0.15, 4) AS pay_conversion_rate,
+             ROUND(0.05 + RAND()*0.25, 4) AS cart_conversion_rate,
+             ROUND(10 + RAND()*90, 2) AS uv_value,
+             ROUND(0.02 + RAND()*0.10, 4) AS collect_conversion_rate
          FROM (
                   SELECT DISTINCT p.product_id, d.date_key
                   FROM ods_dim_product p
@@ -191,7 +158,7 @@ FROM (
               ) product_dates
      ) conversion_data;
 
--- 3. 修复内容互动数据（10%权重）
+-- 3. 修复内容互动数据
 INSERT INTO dwd_product_engagement (
     product_id, date_key, content_guide_uv, content_collect_rate,
     content_cart_rate, content_pay_amount, content_pay_buyers, engagement_score
@@ -204,11 +171,10 @@ SELECT
     content_cart_rate,
     content_pay_amount,
     content_pay_buyers,
-    -- 修复内容营销得分计算（确保不超过100）
     LEAST(
             (content_guide_uv * 0.03 +
-             content_collect_rate * 20 +  -- 转换为百分比
-             content_cart_rate * 20 +     -- 转换为百分比
+             content_collect_rate * 20 +
+             content_cart_rate * 20 +
              content_pay_amount * 0.0002 +
              content_pay_buyers * 0.2),
             100
@@ -217,11 +183,11 @@ FROM (
          SELECT
              product_id,
              date_key,
-             FLOOR(50 + RAND()*500) AS content_guide_uv,           -- 内容引导UV 50-550
-             ROUND(0.01 + RAND()*0.20, 4) AS content_collect_rate, -- 内容收藏率 1%-21%
-             ROUND(0.02 + RAND()*0.15, 4) AS content_cart_rate,    -- 内容加购率 2%-17%
-             ROUND(500 + RAND()*5000, 2) AS content_pay_amount,    -- 内容支付金额 500-5500元
-             FLOOR(10 + RAND()*100) AS content_pay_buyers          -- 内容支付买家 10-110人
+             FLOOR(50 + RAND()*500) AS content_guide_uv,
+             ROUND(0.01 + RAND()*0.20, 4) AS content_collect_rate,
+             ROUND(0.02 + RAND()*0.15, 4) AS content_cart_rate,
+             ROUND(500 + RAND()*5000, 2) AS content_pay_amount,
+             FLOOR(10 + RAND()*100) AS content_pay_buyers
          FROM (
                   SELECT DISTINCT p.product_id, d.date_key
                   FROM ods_dim_product p
@@ -230,7 +196,7 @@ FROM (
               ) product_dates
      ) engagement_data;
 
--- 4. 生成客户拉新数据（10%权重）
+-- 4. 生成客户拉新数据
 INSERT INTO dwd_product_acquisition (
     product_id, date_key, new_buyer_ratio, new_buyer_amount_ratio,
     refund_rate, acquisition_score
@@ -241,7 +207,6 @@ SELECT
     new_buyer_ratio,
     new_buyer_amount_ratio,
     refund_rate,
-    -- 客户拉新得分（确保不超过100）
     LEAST(
             (new_buyer_ratio * 100 * 0.05 +
              new_buyer_amount_ratio * 100 * 0.05 -
@@ -252,9 +217,9 @@ FROM (
          SELECT
              product_id,
              date_key,
-             ROUND(0.05 + RAND()*0.40, 4) AS new_buyer_ratio,          -- 新买家占比 5%-45%
-             ROUND(0.10 + RAND()*0.50, 4) AS new_buyer_amount_ratio,   -- 新买家金额占比 10%-60%
-             ROUND(0.01 + RAND()*0.15, 4) AS refund_rate               -- 退款率 1%-16%
+             ROUND(0.05 + RAND()*0.40, 4) AS new_buyer_ratio,
+             ROUND(0.10 + RAND()*0.50, 4) AS new_buyer_amount_ratio,
+             ROUND(0.01 + RAND()*0.15, 4) AS refund_rate
          FROM (
                   SELECT DISTINCT p.product_id, d.date_key
                   FROM ods_dim_product p
@@ -263,7 +228,7 @@ FROM (
               ) product_dates
      ) acquisition_data;
 
--- 5. 生成服务质量数据（15%权重）
+-- 5. 生成服务质量数据
 INSERT INTO dwd_product_service (
     product_id, date_key, pic_review_count, positive_review_count, service_score
 )
@@ -272,7 +237,6 @@ SELECT
     date_key,
     pic_review_count,
     positive_review_count,
-    -- 服务质量得分（确保不超过100）
     LEAST(
             (pic_review_count * 0.06 +
              positive_review_count * 0.06),
@@ -282,8 +246,8 @@ FROM (
          SELECT
              product_id,
              date_key,
-             FLOOR(5 + RAND()*100) AS pic_review_count,             -- 有图评价数 5-105
-             FLOOR(10 + RAND()*200) AS positive_review_count        -- 正面评价数 10-210
+             FLOOR(5 + RAND()*100) AS pic_review_count,
+             FLOOR(10 + RAND()*200) AS positive_review_count
          FROM (
                   SELECT DISTINCT p.product_id, d.date_key
                   FROM ods_dim_product p
@@ -292,7 +256,7 @@ FROM (
               ) product_dates
      ) service_data;
 
--- 6. 生成综合评分数据（含竞品对比）
+-- 6. 生成综合评分数据
 INSERT INTO dwd_product_evaluation (
     product_id, date_key, traffic_score, conversion_score,
     engagement_score, acquisition_score, service_score,
@@ -306,7 +270,6 @@ SELECT
     e.engagement_score,
     a.acquisition_score,
     s.service_score,
-    -- 综合得分 = 流量得分(35%) + 转化得分(30%) + 内容得分(10%) + 拉新得分(10%) + 服务得分(15%)
     LEAST(
             (t.traffic_score * 0.35 +
              c.conversion_score * 0.30 +
@@ -315,7 +278,6 @@ SELECT
              s.service_score * 0.15),
             100
     ) AS total_score,
-    -- 评级分档逻辑
     CASE
         WHEN (t.traffic_score * 0.35 +
               c.conversion_score * 0.30 +
@@ -334,7 +296,6 @@ SELECT
               s.service_score * 0.15) >= 50 THEN 'C'
         ELSE 'D'
         END AS grade,
-    -- 竞品平均分（随机生成70-90之间的值）
     ROUND(70 + RAND()*20, 2) AS market_avg_score
 FROM dwd_product_traffic t
          JOIN dwd_product_conversion c ON t.product_id = c.product_id AND t.date_key = c.date_key

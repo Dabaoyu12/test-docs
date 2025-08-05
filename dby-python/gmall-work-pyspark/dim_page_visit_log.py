@@ -9,20 +9,17 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 
-# 先检查数据库是否存在，如果不存在则创建
 spark.sql("CREATE DATABASE IF NOT EXISTS gmall_work")
 
-# 检查源表是否存在
+
 try:
-    # 尝试读取表
     spark.table("gmall_work.ods_page_visit_log")
     print("源表存在，可以正常读取")
 except:
-    print("源表不存在，创建测试表并插入测试数据")
-    # 创建测试表
+    print("创建测试表并插入测试数据")
 
 
-# 之后继续原来的处理逻辑...
+
 source_df = spark.table("gmall_work.ods_page_visit_log")
 
 

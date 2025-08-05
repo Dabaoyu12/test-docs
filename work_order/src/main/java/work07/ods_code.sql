@@ -360,5 +360,5 @@ SELECT
     ELT(FLOOR(RAND() * 2) + 1, 'Y','N') AS price_change_flag
 FROM numbers;
 
--- 删除临时表
+
 DROP TEMPORARY TABLE numbers;

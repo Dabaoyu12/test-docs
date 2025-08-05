@@ -11,18 +11,18 @@ spark = SparkSession.builder \
     .config("hive.metastore.uris", "thrift://cdh01:9083") \
     .getOrCreate()
 
-# 从Hive读取数据
+
 print("从Hive表读取数据...")
 ods_df = spark.table("gmall_work.ods_page_visit_log")
 
-# 查看表结构和样本数据
+
 print("原始表结构:")
 ods_df.printSchema()
 
 print("样本数据:")
 ods_df.show(5, truncate=False)
 
-# 数据清洗与转换
+
 print("开始数据处理...")
 processed_df = ods_df \
     .withColumn("session_id", when(col("session_id").isNull() | (trim(col("session_id")) == ""),
@@ -57,7 +57,7 @@ processed_df = ods_df \
     .filter(col("log_id").isNotNull()) \
     .filter(col("visit_time").isNotNull())
 
-# 查看处理后的数据
+
 print("处理后的数据结构:")
 processed_df.printSchema()
 
@@ -68,7 +68,7 @@ processed_df.select(
     "is_order", "referer_type"
 ).show(5, truncate=False)
 
-# 将处理后的数据写入Hive的DWD层（数据仓库明细层）
+
 print("写入处理后的数据到Hive...")
 processed_df.write \
     .mode("overwrite") \

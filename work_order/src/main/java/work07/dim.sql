@@ -42,9 +42,8 @@ SELECT
     create_time, update_time
 FROM ods_dim_product;
 
--- ============================================================================
 -- 2. SKU 维度表 dim_sku
--- ============================================================================
+
 CREATE TABLE IF NOT EXISTS dw_dim_sku (
     sku_key      BIGINT       NOT NULL AUTO_INCREMENT COMMENT 'SKU 代理主键，自增',
     sku_id       BIGINT       NOT NULL COMMENT 'SKU 自然主键，来源 ods_dim_sku.sku_id',
@@ -84,9 +83,9 @@ FROM ods_dim_sku s
          JOIN dw_dim_product p
               ON s.product_id = p.product_id;
 
--- ============================================================================
+
 -- 3. 供应商维度表 dim_vendor
--- ============================================================================
+
 CREATE TABLE IF NOT EXISTS dw_dim_vendor (
     vendor_key    BIGINT       NOT NULL AUTO_INCREMENT COMMENT '供应商代理主键',
     vendor_id     BIGINT       NOT NULL COMMENT '自然主键，来源 ods_dim_vendor.vendor_id',
@@ -115,9 +114,9 @@ SELECT
     create_time, update_time
 FROM ods_dim_vendor;
 
--- ============================================================================
+
 -- 4. 日期维度表 dim_date
--- ============================================================================
+
 CREATE TABLE IF NOT EXISTS dw_dim_date (
     date_key      DATE       NOT NULL COMMENT '日期，主键',
     day_of_week   TINYINT    NOT NULL COMMENT '周几，1=Monday…7=Sunday',
@@ -133,9 +132,9 @@ CREATE TABLE IF NOT EXISTS dw_dim_date (
 INSERT INTO dw_dim_date
 SELECT * FROM ods_dim_date;
 
--- ============================================================================
+
 -- 5. 用户维度表 dim_user
--- ============================================================================
+
 CREATE TABLE IF NOT EXISTS dw_dim_user (
     user_key       BIGINT      NOT NULL AUTO_INCREMENT COMMENT '用户代理主键',
     user_id        BIGINT      NOT NULL COMMENT '自然主键，来源 ods_dim_user.user_id',
