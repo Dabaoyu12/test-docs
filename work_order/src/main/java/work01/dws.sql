@@ -8,26 +8,22 @@ CREATE TABLE dws_item_action_dd (
     category_id INT COMMENT '类目ID',
     category_name VARCHAR(100) COMMENT '类目名称',
     price DECIMAL(10,2) COMMENT '商品价格',
-
     -- 访问指标
     visit_count BIGINT DEFAULT 0 COMMENT '访问次数',
     visitor_count BIGINT DEFAULT 0 COMMENT '访客数',
     total_dwell_seconds BIGINT DEFAULT 0 COMMENT '总停留时长(秒)',
     bounce_count BIGINT DEFAULT 0 COMMENT '跳出次数',
-
     -- 互动指标
     fav_add_count BIGINT DEFAULT 0 COMMENT '新增收藏数',
     fav_remove_count BIGINT DEFAULT 0 COMMENT '取消收藏数',
     cart_add_count BIGINT DEFAULT 0 COMMENT '加购次数',
     cart_remove_count BIGINT DEFAULT 0 COMMENT '移出购物车次数',
     cart_add_quantity BIGINT DEFAULT 0 COMMENT '加购件数',
-
     -- 转化指标
     order_count BIGINT DEFAULT 0 COMMENT '下单次数',
     order_quantity BIGINT DEFAULT 0 COMMENT '下单件数',
     order_amount DECIMAL(18,2) DEFAULT 0 COMMENT '下单金额',
     order_user_count BIGINT DEFAULT 0 COMMENT '下单用户数',
-
     -- 支付指标
     payment_count BIGINT DEFAULT 0 COMMENT '支付次数',
     payment_quantity BIGINT DEFAULT 0 COMMENT '支付件数',
@@ -122,6 +118,7 @@ CREATE TABLE dws_activity_effect_dd (
 ) COMMENT 'DWS-活动效果日汇总表';
     
 -- 5. 用户行为周/月汇总表
+drop table dws_user_action_summary;
 CREATE TABLE dws_user_action_summary (
     period_type ENUM('WEEK','MONTH') NOT NULL COMMENT '周期类型',
     period_key VARCHAR(10) NOT NULL COMMENT '周期键(YYYYWW/YYYYMM)',
@@ -146,57 +143,74 @@ CREATE TABLE dws_user_action_summary (
 ) COMMENT 'DWS-用户行为周期汇总表';
 
 
+-- 删除原表
+DROP TABLE IF EXISTS dwd_payment_di;
 
--- 1. 商品行为日汇总表
-INSERT INTO dws_item_action_dd (
-    date_key, item_id, item_name, category_id, category_name, price,
-    visit_count, visitor_count, total_dwell_seconds, bounce_count,
-    fav_add_count, fav_remove_count, cart_add_count, cart_remove_count, cart_add_quantity,
-    order_count, order_quantity, order_amount, order_user_count,
-    payment_count, payment_quantity, payment_amount, payment_user_count,
-    micro_detail_count, micro_detail_user_count,
-    etl_time
+-- 重建支付事实表（添加 quantity 字段）
+CREATE TABLE dwd_payment_di (
+                                payment_id BIGINT PRIMARY KEY COMMENT '支付ID',
+                                order_id BIGINT NOT NULL COMMENT '订单ID',
+                                item_id BIGINT NOT NULL COMMENT '商品ID',
+                                user_id BIGINT NOT NULL COMMENT '用户ID',
+                                date_key INT NOT NULL COMMENT '日期键',
+                                payment_time DATETIME NOT NULL COMMENT '支付时间',
+                                payment_amount DECIMAL(12,2) NOT NULL COMMENT '支付金额',
+                                quantity INT NOT NULL DEFAULT 1 COMMENT '支付件数', -- 新增字段
+                                method_id VARCHAR(20) COMMENT '支付方式ID',
+                                method_name VARCHAR(100) COMMENT '支付方式名称',
+                                activity_id VARCHAR(20) COMMENT '活动ID',
+                                activity_name VARCHAR(100) COMMENT '活动名称',
+                                category_id INT COMMENT '类目ID',
+                                etl_time DATETIME NOT NULL COMMENT 'ETL时间',
+                                KEY idx_date (date_key),
+                                KEY idx_item (item_id),
+                                KEY idx_user (user_id)
+) COMMENT 'DWD-支付事实表';
+
+-- 重新填充支付事实表数据（从订单表获取 quantity）
+INSERT INTO dwd_payment_di (
+    payment_id, order_id, item_id, user_id, date_key,
+    payment_time, payment_amount, quantity,  -- 包含 quantity
+    method_id, method_name, activity_id, activity_name, category_id, etl_time
 )
 SELECT
-    date_key,
-    item_id,
-    MAX(item_name) AS item_name,
-    MAX(category_id) AS category_id,
-    MAX(category_name) AS category_name,
-    MAX(price) AS price,
-
-    -- 访问指标
-    COUNT(DISTINCT visit_id) AS visit_count,
-    COUNT(DISTINCT user_id) AS visitor_count,
-    SUM(dwell_seconds) AS total_dwell_seconds,
-    SUM(CASE WHEN dwell_seconds < 3 THEN 1 ELSE 0 END) AS bounce_count,
-
-    -- 收藏指标
-    SUM(CASE WHEN fav_action_type = 'ADD' THEN 1 ELSE 0 END) AS fav_add_count,
-    SUM(CASE WHEN fav_action_type = 'REMOVE' THEN 1 ELSE 0 END) AS fav_remove_count,
-
-    -- 购物车指标
-    SUM(CASE WHEN cart_action_type = 'ADD' THEN 1 ELSE 0 END) AS cart_add_count,
-    SUM(CASE WHEN cart_action_type = 'REMOVE' THEN 1 ELSE 0 END) AS cart_remove_count,
-    SUM(cart_quantity) AS cart_add_quantity,
-
-    -- 订单指标
-    COUNT(DISTINCT order_id) AS order_count,
-    SUM(order_quantity) AS order_quantity,
-    SUM(order_amount) AS order_amount,
-    COUNT(DISTINCT order_user_id) AS order_user_count,
-
-    -- 支付指标
-    COUNT(DISTINCT payment_id) AS payment_count,
-    SUM(payment_quantity) AS payment_quantity,
-    SUM(payment_amount) AS payment_amount,
-    COUNT(DISTINCT payment_user_id) AS payment_user_count,
-
-    -- 微详情指标
-    COUNT(DISTINCT micro_id) AS micro_detail_count,
-    COUNT(DISTINCT micro_user_id) AS micro_detail_user_count,
-
+    p.payment_id,
+    p.order_id,
+    p.item_id,
+    p.user_id,
+    p.date_key,
+    p.payment_time,
+    p.payment_amount,
+    COALESCE(o.quantity, 1) AS quantity,  -- 从订单表获取件数
+    p.payment_method AS method_id,
+    m.method_name,
+    a.activity_id,
+    a.activity_name,
+    i.category_id,
     NOW()
+FROM ods_event_payment p
+         JOIN dim_payment_method m ON p.payment_method = m.method_id
+         JOIN dim_item i ON p.item_id = i.item_id
+         LEFT JOIN ods_event_order o  -- 关联订单表获取件数
+                   ON p.order_id = o.order_id AND p.item_id = o.item_id
+         LEFT JOIN dim_activity a ON
+    CASE
+        WHEN p.is_juhuasuan = 1 THEN 'JUHUASUAN'
+        WHEN p.is_presale = 1 THEN CONCAT('PRESALE-', p.presale_stage)
+        ELSE 'NORMAL'
+        END = a.activity_id;
+
+
+-- 1. 商品行为日汇总表
+CREATE TEMPORARY TABLE temp_combined_data AS
+SELECT
+    date_key, item_id,
+    visit_id, user_id, dwell_seconds,
+    fav_action_type, cart_action_type,
+    cart_quantity,
+    order_id, order_user_id, order_quantity, order_amount,
+    payment_id, payment_user_id, payment_quantity, payment_amount,
+    micro_id, micro_user_id
 FROM (
          -- 访问数据
          SELECT
@@ -273,10 +287,62 @@ FROM (
              NULL AS payment_id, NULL AS payment_user_id, 0 AS payment_quantity, 0 AS payment_amount,
              micro_id, user_id
          FROM dwd_item_micro_detail_di
-     ) combined
-         JOIN dim_item i USING (item_id)
-         JOIN dim_category c ON i.category_id = c.category_id
-GROUP BY date_key, item_id;
+     ) combined_data;
+
+-- 插入DWS表（使用临时表）
+INSERT INTO dws_item_action_dd (
+    date_key, item_id, item_name, category_id, category_name, price,
+    visit_count, visitor_count, total_dwell_seconds, bounce_count,
+    fav_add_count, fav_remove_count, cart_add_count, cart_remove_count, cart_add_quantity,
+    order_count, order_quantity, order_amount, order_user_count,
+    payment_count, payment_quantity, payment_amount, payment_user_count,
+    micro_detail_count, micro_detail_user_count,
+    etl_time
+)
+SELECT
+    t.date_key,
+    t.item_id,
+    MAX(i.item_name) AS item_name,
+    MAX(i.category_id) AS category_id,
+    MAX(c.category_name) AS category_name,
+    MAX(i.price) AS price,
+
+    -- 访问指标
+    COUNT(DISTINCT t.visit_id) AS visit_count,
+    COUNT(DISTINCT t.user_id) AS visitor_count,
+    SUM(t.dwell_seconds) AS total_dwell_seconds,
+    SUM(CASE WHEN t.dwell_seconds < 3 THEN 1 ELSE 0 END) AS bounce_count,
+
+    -- 收藏指标
+    SUM(CASE WHEN t.fav_action_type = 'ADD' THEN 1 ELSE 0 END) AS fav_add_count,
+    SUM(CASE WHEN t.fav_action_type = 'REMOVE' THEN 1 ELSE 0 END) AS fav_remove_count,
+
+    -- 购物车指标
+    SUM(CASE WHEN t.cart_action_type = 'ADD' THEN 1 ELSE 0 END) AS cart_add_count,
+    SUM(CASE WHEN t.cart_action_type = 'REMOVE' THEN 1 ELSE 0 END) AS cart_remove_count,
+    SUM(t.cart_quantity) AS cart_add_quantity,
+
+    -- 订单指标
+    COUNT(DISTINCT t.order_id) AS order_count,
+    SUM(t.order_quantity) AS order_quantity,
+    SUM(t.order_amount) AS order_amount,
+    COUNT(DISTINCT t.order_user_id) AS order_user_count,
+
+    -- 支付指标
+    COUNT(DISTINCT t.payment_id) AS payment_count,
+    SUM(t.payment_quantity) AS payment_quantity,
+    SUM(t.payment_amount) AS payment_amount,
+    COUNT(DISTINCT t.payment_user_id) AS payment_user_count,
+
+    -- 微详情指标
+    COUNT(DISTINCT t.micro_id) AS micro_detail_count,
+    COUNT(DISTINCT t.micro_user_id) AS micro_detail_user_count,
+
+    NOW() AS etl_time
+FROM temp_combined_data t
+         JOIN dim_item i ON t.item_id = i.item_id
+         LEFT JOIN dim_category c ON i.category_id = c.category_id
+GROUP BY t.date_key, t.item_id;
 
 -- 2. 用户商品行为日汇总表
 INSERT INTO dws_user_item_action_dd (
@@ -361,6 +427,13 @@ FROM (
      ) combined
 GROUP BY date_key, user_id, item_id;
 
+
+UPDATE dim_item i
+    JOIN dim_category c ON i.category_id = c.category_id
+SET i.category_id = c.category_id
+WHERE i.category_id IS NULL OR c.category_id IS NULL;
+
+
 -- 3. 类目日汇总表
 INSERT INTO dws_category_action_dd (
     date_key, category_id, category_name, level,
@@ -370,37 +443,36 @@ INSERT INTO dws_category_action_dd (
     etl_time
 )
 SELECT
-    date_key,
+    a.date_key,
     c.category_id,
     c.category_name,
     c.level,
-
-    -- 用户指标
-    COUNT(DISTINCT CASE WHEN is_visit = 1 THEN user_id END) AS visitor_count,
-    COUNT(DISTINCT CASE WHEN is_fav_add = 1 THEN user_id END) AS fav_user_count,
-    COUNT(DISTINCT CASE WHEN is_cart_add = 1 THEN user_id END) AS cart_user_count,
-    COUNT(DISTINCT CASE WHEN is_order = 1 THEN user_id END) AS order_user_count,
-    COUNT(DISTINCT CASE WHEN is_payment = 1 THEN user_id END) AS payment_user_count,
-
-    -- 金额指标
-    SUM(payment_amount) AS payment_amount,
-
-    -- 商品指标
-    COUNT(DISTINCT CASE WHEN is_visit = 1 THEN item_id END) AS visited_item_count,
-    COUNT(DISTINCT CASE WHEN is_order = 1 THEN item_id END) AS ordered_item_count,
-    COUNT(DISTINCT CASE WHEN is_payment = 1 THEN item_id END) AS paid_item_count,
-
+    COUNT(DISTINCT CASE WHEN a.is_visit = 1 THEN a.user_id END) AS visitor_count,
+    COUNT(DISTINCT CASE WHEN a.is_fav_add = 1 THEN a.user_id END) AS fav_user_count,
+    COUNT(DISTINCT CASE WHEN a.is_cart_add = 1 THEN a.user_id END) AS cart_user_count,
+    COUNT(DISTINCT CASE WHEN a.is_order = 1 THEN a.user_id END) AS order_user_count,
+    COUNT(DISTINCT CASE WHEN a.is_payment = 1 THEN a.user_id END) AS payment_user_count,
+    SUM(a.payment_amount) AS payment_amount,
+    COUNT(DISTINCT CASE WHEN a.is_visit = 1 THEN a.item_id END) AS visited_item_count,
+    COUNT(DISTINCT CASE WHEN a.is_order = 1 THEN a.item_id END) AS ordered_item_count,
+    COUNT(DISTINCT CASE WHEN a.is_payment = 1 THEN a.item_id END) AS paid_item_count,
     NOW()
 FROM dws_user_item_action_dd a
-         JOIN dim_item i ON a.item_id = i.item_id
-         JOIN dim_category c ON i.category_id = c.category_id
-GROUP BY date_key, c.category_id;
+         LEFT JOIN dim_item i ON a.item_id = i.item_id
+         LEFT JOIN dim_category c ON i.category_id = c.category_id
+WHERE c.category_id IS NOT NULL
+GROUP BY a.date_key, c.category_id, c.category_name, c.level;
 
 -- 4. 活动效果日汇总表
+ALTER TABLE dws_activity_effect_dd
+    CHANGE COLUMN order_amount total_order_amount DECIMAL(18,2) DEFAULT 0 COMMENT '累计下单金额',
+    ADD COLUMN paid_order_amount DECIMAL(18,2) DEFAULT 0 COMMENT '已支付订单金额' AFTER total_order_amount;
+
+
 INSERT INTO dws_activity_effect_dd (
     date_key, activity_id, activity_name,
     item_count, visitor_count,
-    order_count, order_amount, payment_count, payment_amount, payment_user_count,
+    order_count, total_order_amount, paid_order_amount, payment_count, payment_amount, payment_user_count,
     refund_count, refund_amount,
     etl_time
 )
@@ -414,20 +486,22 @@ SELECT
     COUNT(DISTINCT p.user_id) AS visitor_count,
 
     -- 转化指标
-    COUNT(DISTINCT p.order_id) AS order_count,
-    SUM(p.order_amount) AS order_amount,
+    COUNT(DISTINCT o.order_id) AS order_count,
+    COALESCE(SUM(o.order_amount), 0) AS total_order_amount,
+    COALESCE(SUM(CASE WHEN p.payment_id IS NOT NULL THEN o.order_amount ELSE 0 END), 0) AS paid_order_amount,
     COUNT(DISTINCT p.payment_id) AS payment_count,
-    SUM(p.payment_amount) AS payment_amount,
+    COALESCE(SUM(p.payment_amount), 0) AS payment_amount,
     COUNT(DISTINCT p.user_id) AS payment_user_count,
 
     -- 退款指标
     COUNT(DISTINCT r.refund_id) AS refund_count,
-    SUM(r.refund_amount) AS refund_amount,
+    COALESCE(SUM(r.refund_amount), 0) AS refund_amount,
 
-    NOW()
-FROM dwd_payment_di p
+    NOW() AS etl_time
+FROM dim_activity a
+         LEFT JOIN dwd_payment_di p ON a.activity_id = p.activity_id
+         LEFT JOIN dwd_order_di o ON p.order_id = o.order_id AND p.item_id = o.item_id
          LEFT JOIN ods_event_refund r ON p.payment_id = r.payment_id
-         JOIN dim_activity a ON p.activity_id = a.activity_id
 GROUP BY p.date_key, a.activity_id;
 
 -- 5. 用户行为周/月汇总表
@@ -439,46 +513,66 @@ INSERT INTO dws_user_action_summary (
     etl_time
 )
 SELECT
-    period_type,
-    period_key,
-    user_id,
-
-    -- 行为指标
-    COUNT(DISTINCT CASE WHEN is_visit = 1 THEN date_key END) AS visit_count,
-    SUM(is_fav_add) AS fav_add_count,
-    SUM(is_cart_add) AS cart_add_count,
-    SUM(is_order) AS order_count,
-    SUM(is_payment) AS payment_count,
-
-    -- 金额指标
-    SUM(order_amount) AS total_order_amount,
-    SUM(payment_amount) AS total_payment_amount,
-
-    -- 新老买家标记 (基于用户维度表)
+    pd.period_type,
+    pd.period_key,
+    pd.user_id,
+    -- 行为指标（直接使用子查询中已聚合的结果）
+    pd.visit_count,
+    pd.fav_add_count,
+    pd.cart_add_count,
+    pd.order_count,
+    pd.payment_count,
+    -- 金额指标（直接使用子查询中已聚合的结果）
+    pd.total_order_amount,
+    pd.total_payment_amount,
+    -- 新老买家标记
     CASE
-        WHEN u.last_payment_date < DATE_SUB(d.date, INTERVAL 365 DAY)
+        WHEN u.last_payment_date < DATE_SUB(pd.period_start_date, INTERVAL 365 DAY)
             OR u.last_payment_date IS NULL THEN 1
         ELSE 0
         END AS is_new_buyer,
-
-    NOW()
+    NOW() AS etl_time
 FROM (
+         -- 周数据：先按周和用户聚合每日行为
          SELECT
              'WEEK' AS period_type,
              DATE_FORMAT(d.date, '%x%v') AS period_key,
-             a.*
+             MIN(d.date) AS period_start_date,
+             a.user_id,
+             -- 子查询中提前聚合行为指标，避免外层引用非聚合字段
+             COUNT(DISTINCT CASE WHEN a.is_visit = 1 THEN a.date_key END) AS visit_count,
+             SUM(a.is_fav_add) AS fav_add_count,
+             SUM(a.is_cart_add) AS cart_add_count,
+             SUM(a.is_order) AS order_count,
+             SUM(a.is_payment) AS payment_count,
+             SUM(a.order_amount) AS total_order_amount,
+             SUM(a.payment_amount) AS total_payment_amount
          FROM dws_user_item_action_dd a
                   JOIN dim_date d ON a.date_key = d.date_key
+         GROUP BY DATE_FORMAT(d.date, '%x%v'), a.user_id  -- 子查询 GROUP BY 包含所有非聚合字段
 
          UNION ALL
 
+         -- 月数据：先按月和用户聚合每日行为
          SELECT
              'MONTH' AS period_type,
              DATE_FORMAT(d.date, '%Y%m') AS period_key,
-             a.*
+             MIN(d.date) AS period_start_date,
+             a.user_id,
+             -- 同样提前聚合
+             COUNT(DISTINCT CASE WHEN a.is_visit = 1 THEN a.date_key END) AS visit_count,
+             SUM(a.is_fav_add) AS fav_add_count,
+             SUM(a.is_cart_add) AS cart_add_count,
+             SUM(a.is_order) AS order_count,
+             SUM(a.is_payment) AS payment_count,
+             SUM(a.order_amount) AS total_order_amount,
+             SUM(a.payment_amount) AS total_payment_amount
          FROM dws_user_item_action_dd a
                   JOIN dim_date d ON a.date_key = d.date_key
-     ) period_data
-         JOIN dim_user u USING (user_id)
-         JOIN dim_date d ON period_data.date_key = d.date_key
-GROUP BY period_type, period_key, user_id;
+         GROUP BY DATE_FORMAT(d.date, '%Y%m'), a.user_id  -- 子查询 GROUP BY 包含所有非聚合字段
+     ) pd
+         JOIN dim_user u ON pd.user_id = u.user_id
+-- 外层 GROUP BY 包含所有非聚合字段（子查询已聚合，这里直接用即可）
+GROUP BY pd.period_type, pd.period_key, pd.user_id, pd.period_start_date,
+         pd.visit_count, pd.fav_add_count, pd.cart_add_count, pd.order_count,
+         pd.payment_count, pd.total_order_amount, pd.total_payment_amount

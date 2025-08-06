@@ -101,16 +101,6 @@ FROM (
          LIMIT 2000
      ) t;
 
--- 填充类目维度（三级类目结构）
--- 创建类目维度表
-CREATE TABLE dim_category (
-                              category_id INT PRIMARY KEY COMMENT '类目ID',
-                              category_name VARCHAR(100) NOT NULL COMMENT '类目名称',
-                              level TINYINT NOT NULL COMMENT '类目层级(1-一级 2-二级 3-叶子)',
-                              parent_id INT COMMENT '父类目ID',
-                              path VARCHAR(255) COMMENT '类目路径',
-                              etl_time DATETIME NOT NULL COMMENT 'ETL时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='类目维度表';
 
 -- 修复后的数据插入脚本
 INSERT INTO dim_category (category_id, category_name, level, parent_id, path, etl_time)
@@ -122,54 +112,33 @@ SELECT
     path,
     NOW()
 FROM (
-         -- 一级类目（根类目）
+         -- Level 1: Root categories
          SELECT
              100 + root_id AS category_id,
-             CONCAT('根类目', root_id) AS category_name,
+             CONCAT('Root Category ', root_id) AS category_name,
              1 AS level,
              NULL AS parent_id,
              CAST(100 + root_id AS CHAR) AS path,
-             root_id  -- 保留原始ID
+             root_id
          FROM (
-                  SELECT 1 AS root_id UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5
+                  SELECT 1 AS root_id UNION SELECT 2 UNION SELECT 3
               ) root_cat
 
          UNION ALL
 
-         -- 二级类目
+         -- Level 2: Subcategories
          SELECT
              1000 + root_id * 10 + sub_id AS category_id,
-             CONCAT('根类目', root_id, '-二级类', sub_id) AS category_name,
+             CONCAT('Subcategory ', root_id, '-', sub_id) AS category_name,
              2 AS level,
              100 + root_id AS parent_id,
              CONCAT(100 + root_id, '.', 1000 + root_id * 10 + sub_id) AS path,
-             sub_id  -- 保留原始ID
+             sub_id
          FROM (
                   SELECT root_id, sub_id
-                  FROM (SELECT 1 AS root_id UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5) roots
+                  FROM (SELECT 1 AS root_id UNION SELECT 2 UNION SELECT 3) roots
                            CROSS JOIN (SELECT 1 AS sub_id UNION SELECT 2) subs
               ) sub_cat
-
-         UNION ALL
-
-         -- 三级类目（叶子类目）
-         SELECT
-             10000 + root_id * 100 + sub_id * 10 + leaf_id AS category_id,
-             CONCAT('根类目', root_id, '-二级类', sub_id, '-叶子类', leaf_id) AS category_name,
-             3 AS level,
-             1000 + root_id * 10 + sub_id AS parent_id,
-             CONCAT(
-                     100 + root_id, '.',
-                     1000 + root_id * 10 + sub_id, '.',
-                     10000 + root_id * 100 + sub_id * 10 + leaf_id
-             ) AS path,
-             leaf_id  -- 保留原始ID
-         FROM (
-                  SELECT root_id, sub_id, leaf_id
-                  FROM (SELECT 1 AS root_id UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5) roots
-                           CROSS JOIN (SELECT 1 AS sub_id UNION SELECT 2) subs
-                           CROSS JOIN (SELECT 1 AS leaf_id UNION SELECT 2) leafs
-              ) leaf_cat
      ) all_categories;
 
 -- 填充用户维度（基于ODS中的用户ID）
