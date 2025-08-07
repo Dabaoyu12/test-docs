@@ -1,28 +1,18 @@
--- ============================================================================
--- ODS 原始事件表设计（MySQL 5.7 语法）
--- 仅包含原始日志，不含维度表
--- 支持后续 DIM→DWD→DWS→ADS 全链路指标计算
--- ============================================================================
-
--- ============================================================================
--- 1. 商品访问及停留日志
--- ----------------------------------------------------------------------------
--- 用于统计访客访问详情页人数、停留时长、人均停留时长、跳出率等指标
--- ============================================================================
 use gmall_work_01;
+drop table if exists ods_event_item_visit;
 CREATE TABLE ods_event_item_visit (
-     visit_id        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
-     user_id         BIGINT       NOT NULL                COMMENT '访客买家ID',
-     item_id         BIGINT       NOT NULL                COMMENT '商品ID',
-     date_key        INT          NOT NULL                COMMENT '访问日期键(YYYYMMDD)',
-     visit_time      DATETIME     NOT NULL                COMMENT '访问时间戳',
-     dwell_seconds   INT          DEFAULT NULL            COMMENT '停留时长(秒)',
-     terminal        ENUM('PC','Wireless','App') NOT NULL COMMENT '访问终端',
-     etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
-     PRIMARY KEY (visit_id),
-     KEY idx_visit_date   (date_key),
-     KEY idx_visit_item   (item_id),
-     KEY idx_visit_user   (user_id)
+                                      visit_id        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
+                                      user_id         BIGINT       NOT NULL                COMMENT '访客买家ID',
+                                      item_id         BIGINT       NOT NULL                COMMENT '商品ID',
+                                      date_key        INT          NOT NULL                COMMENT '访问日期键(YYYYMMDD)',
+                                      visit_time      DATETIME     NOT NULL                COMMENT '访问时间戳',
+                                      dwell_seconds   INT          DEFAULT NULL            COMMENT '停留时长(秒)',
+                                      terminal        ENUM('PC','Wireless','App') NOT NULL COMMENT '访问终端',
+                                      etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
+                                      PRIMARY KEY (visit_id),
+                                      KEY idx_visit_date   (date_key),
+                                      KEY idx_visit_item   (item_id),
+                                      KEY idx_visit_user   (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 商品访问及停留日志';
 
@@ -32,18 +22,19 @@ CREATE TABLE ods_event_item_visit (
 -- ----------------------------------------------------------------------------
 -- 用于统计详情页浏览量、独立访客PV等指标
 -- ============================================================================
+drop table if exists ods_event_item_pv;
 CREATE TABLE ods_event_item_pv (
-       pv_id           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
-       user_id         BIGINT       NOT NULL                COMMENT '访客买家ID',
-       item_id         BIGINT       NOT NULL                COMMENT '商品ID',
-       date_key        INT          NOT NULL                COMMENT '浏览日期键(YYYYMMDD)',
-       pv_time         DATETIME     NOT NULL                COMMENT '浏览时间戳',
-       terminal        ENUM('PC','Wireless','App') NOT NULL COMMENT '终端类型',
-       etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
-       PRIMARY KEY (pv_id),
-       KEY idx_pv_date      (date_key),
-       KEY idx_pv_item      (item_id),
-       KEY idx_pv_user      (user_id)
+                                   pv_id           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
+                                   user_id         BIGINT       NOT NULL                COMMENT '访客买家ID',
+                                   item_id         BIGINT       NOT NULL                COMMENT '商品ID',
+                                   date_key        INT          NOT NULL                COMMENT '浏览日期键(YYYYMMDD)',
+                                   pv_time         DATETIME     NOT NULL                COMMENT '浏览时间戳',
+                                   terminal        ENUM('PC','Wireless','App') NOT NULL COMMENT '终端类型',
+                                   etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
+                                   PRIMARY KEY (pv_id),
+                                   KEY idx_pv_date      (date_key),
+                                   KEY idx_pv_item      (item_id),
+                                   KEY idx_pv_user      (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 商品详情页 PV 日志';
 
@@ -53,18 +44,19 @@ CREATE TABLE ods_event_item_pv (
 -- ----------------------------------------------------------------------------
 -- 记录新增收藏/取消收藏，支持收藏人数、收藏率等指标
 -- ============================================================================
+drop table if exists ods_event_item_favorite;
 CREATE TABLE ods_event_item_favorite (
-        fav_id          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
-        user_id         BIGINT       NOT NULL                COMMENT '买家ID',
-        item_id         BIGINT       NOT NULL                COMMENT '商品ID',
-        date_key        INT          NOT NULL                COMMENT '事件日期键(YYYYMMDD)',
-        fav_time        DATETIME     NOT NULL                COMMENT '收藏时间戳',
-        action_type     ENUM('ADD','REMOVE') NOT NULL      COMMENT '动作类型：ADD=收藏,REMOVE=取消收藏',
-        etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
-        PRIMARY KEY (fav_id),
-        KEY idx_fav_date     (date_key),
-        KEY idx_fav_item     (item_id),
-        KEY idx_fav_user     (user_id)
+                                         fav_id          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
+                                         user_id         BIGINT       NOT NULL                COMMENT '买家ID',
+                                         item_id         BIGINT       NOT NULL                COMMENT '商品ID',
+                                         date_key        INT          NOT NULL                COMMENT '事件日期键(YYYYMMDD)',
+                                         fav_time        DATETIME     NOT NULL                COMMENT '收藏时间戳',
+                                         action_type     ENUM('ADD','REMOVE') NOT NULL      COMMENT '动作类型：ADD=收藏,REMOVE=取消收藏',
+                                         etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
+                                         PRIMARY KEY (fav_id),
+                                         KEY idx_fav_date     (date_key),
+                                         KEY idx_fav_item     (item_id),
+                                         KEY idx_fav_user     (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 商品收藏事件日志';
 
@@ -74,19 +66,20 @@ CREATE TABLE ods_event_item_favorite (
 -- ----------------------------------------------------------------------------
 -- 支持加购人数、加购件数、加购转化率等指标
 -- ============================================================================
+drop table if exists ods_event_item_cart;
 CREATE TABLE ods_event_item_cart (
-    cart_id         BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
-    user_id         BIGINT       NOT NULL                COMMENT '买家ID',
-    item_id         BIGINT       NOT NULL                COMMENT '商品ID',
-    date_key        INT          NOT NULL                COMMENT '事件日期键(YYYYMMDD)',
-    cart_time       DATETIME     NOT NULL                COMMENT '加购/移除时间戳',
-    quantity        INT          NOT NULL DEFAULT 1      COMMENT '加购/移除件数',
-    action_type     ENUM('ADD','REMOVE') NOT NULL      COMMENT '动作类型：ADD=加购,REMOVE=移除',
-    etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
-    PRIMARY KEY (cart_id),
-    KEY idx_cart_date    (date_key),
-    KEY idx_cart_item    (item_id),
-    KEY idx_cart_user    (user_id)
+                                     cart_id         BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
+                                     user_id         BIGINT       NOT NULL                COMMENT '买家ID',
+                                     item_id         BIGINT       NOT NULL                COMMENT '商品ID',
+                                     date_key        INT          NOT NULL                COMMENT '事件日期键(YYYYMMDD)',
+                                     cart_time       DATETIME     NOT NULL                COMMENT '加购/移除时间戳',
+                                     quantity        INT          NOT NULL DEFAULT 1      COMMENT '加购/移除件数',
+                                     action_type     ENUM('ADD','REMOVE') NOT NULL      COMMENT '动作类型：ADD=加购,REMOVE=移除',
+                                     etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
+                                     PRIMARY KEY (cart_id),
+                                     KEY idx_cart_date    (date_key),
+                                     KEY idx_cart_item    (item_id),
+                                     KEY idx_cart_user    (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 商品加购/移除购物车日志';
 
@@ -96,20 +89,21 @@ CREATE TABLE ods_event_item_cart (
 -- ----------------------------------------------------------------------------
 -- 记录拍下件数与金额，支持下单买家数、件单价、下单转化率等指标
 -- ============================================================================
+drop table if exists ods_event_order;
 CREATE TABLE ods_event_order (
-     order_id        BIGINT       NOT NULL                COMMENT '订单ID',
-     item_id         BIGINT       NOT NULL                COMMENT '商品ID',
-     user_id         BIGINT       NOT NULL                COMMENT '买家ID',
-     date_key        INT          NOT NULL                COMMENT '下单日期键(YYYYMMDD)',
-     order_time      DATETIME     NOT NULL                COMMENT '下单时间戳',
-     quantity        INT          NOT NULL                COMMENT '拍下件数',
-     order_amount    DECIMAL(12,2) NOT NULL               COMMENT '拍下金额',
-     order_status    VARCHAR(20)  NOT NULL                COMMENT '订单状态',
-     etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
-     PRIMARY KEY (order_id, item_id),
-     KEY idx_order_date    (date_key),
-     KEY idx_order_item    (item_id),
-     KEY idx_order_user    (user_id)
+                                 order_id        BIGINT       NOT NULL                COMMENT '订单ID',
+                                 item_id         BIGINT       NOT NULL                COMMENT '商品ID',
+                                 user_id         BIGINT       NOT NULL                COMMENT '买家ID',
+                                 date_key        INT          NOT NULL                COMMENT '下单日期键(YYYYMMDD)',
+                                 order_time      DATETIME     NOT NULL                COMMENT '下单时间戳',
+                                 quantity        INT          NOT NULL                COMMENT '拍下件数',
+                                 order_amount    DECIMAL(12,2) NOT NULL               COMMENT '拍下金额',
+                                 order_status    VARCHAR(20)  NOT NULL                COMMENT '订单状态',
+                                 etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
+                                 PRIMARY KEY (order_id, item_id),
+                                 KEY idx_order_date    (date_key),
+                                 KEY idx_order_item    (item_id),
+                                 KEY idx_order_user    (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 下单事件日志';
 
@@ -119,23 +113,24 @@ CREATE TABLE ods_event_order (
 -- ----------------------------------------------------------------------------
 -- 记录支付金额、支付买家数、预售/聚划算、支付渠道等指标
 -- ============================================================================
+drop table if exists ods_event_payment;
 CREATE TABLE ods_event_payment (
-       payment_id      BIGINT       NOT NULL AUTO_INCREMENT COMMENT '支付流水ID',
-       order_id        BIGINT       NOT NULL                COMMENT '关联订单ID',
-       item_id         BIGINT       NOT NULL                COMMENT '商品ID',
-       user_id         BIGINT       NOT NULL                COMMENT '买家ID',
-       date_key        INT          NOT NULL                COMMENT '支付日期键(YYYYMMDD)',
-       payment_time    DATETIME     NOT NULL                COMMENT '支付时间戳',
-       payment_amount  DECIMAL(12,2) NOT NULL               COMMENT '支付金额',
-       payment_method  VARCHAR(64)  NOT NULL                COMMENT '支付方式',
-       is_presale      TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '是否预售',
-       presale_stage   VARCHAR(32)  DEFAULT NULL            COMMENT '预售阶段',
-       is_juhuasuan    TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '是否聚划算',
-       etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
-       PRIMARY KEY (payment_id),
-       KEY idx_pay_date     (date_key),
-       KEY idx_pay_item     (item_id),
-       KEY idx_pay_user     (user_id)
+                                   payment_id      BIGINT       NOT NULL AUTO_INCREMENT COMMENT '支付流水ID',
+                                   order_id        BIGINT       NOT NULL                COMMENT '关联订单ID',
+                                   item_id         BIGINT       NOT NULL                COMMENT '商品ID',
+                                   user_id         BIGINT       NOT NULL                COMMENT '买家ID',
+                                   date_key        INT          NOT NULL                COMMENT '支付日期键(YYYYMMDD)',
+                                   payment_time    DATETIME     NOT NULL                COMMENT '支付时间戳',
+                                   payment_amount  DECIMAL(12,2) NOT NULL               COMMENT '支付金额',
+                                   payment_method  VARCHAR(64)  NOT NULL                COMMENT '支付方式',
+                                   is_presale      TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '是否预售',
+                                   presale_stage   VARCHAR(32)  DEFAULT NULL            COMMENT '预售阶段',
+                                   is_juhuasuan    TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '是否聚划算',
+                                   etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
+                                   PRIMARY KEY (payment_id),
+                                   KEY idx_pay_date     (date_key),
+                                   KEY idx_pay_item     (item_id),
+                                   KEY idx_pay_user     (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 支付事件日志';
 
@@ -145,21 +140,22 @@ CREATE TABLE ods_event_payment (
 -- ----------------------------------------------------------------------------
 -- 记录退款金额、类型，支持退款率、退款金额统计等指标
 -- ============================================================================
+drop table if exists ods_event_refund;
 CREATE TABLE ods_event_refund (
-      refund_id       BIGINT       NOT NULL AUTO_INCREMENT COMMENT '退款流水ID',
-      payment_id      BIGINT       NOT NULL                COMMENT '关联支付ID',
-      order_id        BIGINT       NOT NULL                COMMENT '关联订单ID',
-      item_id         BIGINT       NOT NULL                COMMENT '商品ID',
-      user_id         BIGINT       NOT NULL                COMMENT '买家ID',
-      date_key        INT          NOT NULL                COMMENT '退款日期键(YYYYMMDD)',
-      refund_time     DATETIME     NOT NULL                COMMENT '退款时间戳',
-      refund_amount   DECIMAL(12,2) NOT NULL               COMMENT '退款金额',
-      refund_type     ENUM('ONLY_REFUND','RETURN_REFUND') NOT NULL COMMENT '退款类型',
-      etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
-      PRIMARY KEY (refund_id),
-      KEY idx_refund_date  (date_key),
-      KEY idx_refund_item  (item_id),
-      KEY idx_refund_user  (user_id)
+                                  refund_id       BIGINT       NOT NULL AUTO_INCREMENT COMMENT '退款流水ID',
+                                  payment_id      BIGINT       NOT NULL                COMMENT '关联支付ID',
+                                  order_id        BIGINT       NOT NULL                COMMENT '关联订单ID',
+                                  item_id         BIGINT       NOT NULL                COMMENT '商品ID',
+                                  user_id         BIGINT       NOT NULL                COMMENT '买家ID',
+                                  date_key        INT          NOT NULL                COMMENT '退款日期键(YYYYMMDD)',
+                                  refund_time     DATETIME     NOT NULL                COMMENT '退款时间戳',
+                                  refund_amount   DECIMAL(12,2) NOT NULL               COMMENT '退款金额',
+                                  refund_type     ENUM('ONLY_REFUND','RETURN_REFUND') NOT NULL COMMENT '退款类型',
+                                  etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
+                                  PRIMARY KEY (refund_id),
+                                  KEY idx_refund_date  (date_key),
+                                  KEY idx_refund_item  (item_id),
+                                  KEY idx_refund_user  (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 退款/退货事件日志';
 
@@ -169,19 +165,20 @@ CREATE TABLE ods_event_refund (
 -- ----------------------------------------------------------------------------
 -- 记录微详情页停留超过3秒的用户，支持微详情访客数指标
 -- ============================================================================
+drop table if exists ods_event_item_micro_detail;
 CREATE TABLE ods_event_item_micro_detail (
-            micro_id        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
-            user_id         BIGINT       NOT NULL                COMMENT '访客买家ID',
-            item_id         BIGINT       NOT NULL                COMMENT '商品ID',
-            date_key        INT          NOT NULL                COMMENT '浏览日期键(YYYYMMDD)',
-            start_time      DATETIME     NOT NULL                COMMENT '开始浏览时间',
-            duration_sec    INT          NOT NULL                COMMENT '浏览时长(秒)',
-            terminal        ENUM('PC','Wireless','App') NOT NULL COMMENT '终端类型',
-            etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
-            PRIMARY KEY (micro_id),
-            KEY idx_micro_date  (date_key),
-            KEY idx_micro_item  (item_id),
-            KEY idx_micro_user  (user_id)
+                                             micro_id        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
+                                             user_id         BIGINT       NOT NULL                COMMENT '访客买家ID',
+                                             item_id         BIGINT       NOT NULL                COMMENT '商品ID',
+                                             date_key        INT          NOT NULL                COMMENT '浏览日期键(YYYYMMDD)',
+                                             start_time      DATETIME     NOT NULL                COMMENT '开始浏览时间',
+                                             duration_sec    INT          NOT NULL                COMMENT '浏览时长(秒)',
+                                             terminal        ENUM('PC','Wireless','App') NOT NULL COMMENT '终端类型',
+                                             etl_time        DATETIME     NOT NULL                COMMENT 'ODS 写入时间',
+                                             PRIMARY KEY (micro_id),
+                                             KEY idx_micro_date  (date_key),
+                                             KEY idx_micro_item  (item_id),
+                                             KEY idx_micro_user  (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 商品微详情页浏览日志';
 
@@ -189,21 +186,22 @@ CREATE TABLE ods_event_item_micro_detail (
 -- 9. 列表页曝光与点击日志
 -- 用于统计列表页（搜索/频道/推荐）商品曝光量、点击量、CTR 等指标
 -- =====================================================================
+drop table if exists ods_event_listing;
 CREATE TABLE ods_event_listing (
-       event_id        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
-       user_id         BIGINT       DEFAULT NULL           COMMENT '买家ID，访客可为空',
-       item_id         BIGINT       NOT NULL               COMMENT '商品ID',
-       date_key        INT          NOT NULL               COMMENT '事件日期键(YYYYMMDD)',
-       event_time      DATETIME     NOT NULL               COMMENT '事件时间戳',
-       page_type       ENUM('SEARCH','CATEGORY','RECOMMEND') NOT NULL COMMENT '页面类型',
-       action_type     ENUM('EXPOSE','CLICK') NOT NULL     COMMENT '曝光/点击',
-       keyword         VARCHAR(128) DEFAULT NULL           COMMENT '搜索词，仅搜索页曝光/点击记录',
-       referrer        VARCHAR(256) DEFAULT NULL           COMMENT '来源页URL或渠道',
-       etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
-       PRIMARY KEY (event_id),
-       KEY idx_list_date   (date_key),
-       KEY idx_list_item   (item_id),
-       KEY idx_list_user   (user_id)
+                                   event_id        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
+                                   user_id         BIGINT       DEFAULT NULL           COMMENT '买家ID，访客可为空',
+                                   item_id         BIGINT       NOT NULL               COMMENT '商品ID',
+                                   date_key        INT          NOT NULL               COMMENT '事件日期键(YYYYMMDD)',
+                                   event_time      DATETIME     NOT NULL               COMMENT '事件时间戳',
+                                   page_type       ENUM('SEARCH','CATEGORY','RECOMMEND') NOT NULL COMMENT '页面类型',
+                                   action_type     ENUM('EXPOSE','CLICK') NOT NULL     COMMENT '曝光/点击',
+                                   keyword         VARCHAR(128) DEFAULT NULL           COMMENT '搜索词，仅搜索页曝光/点击记录',
+                                   referrer        VARCHAR(256) DEFAULT NULL           COMMENT '来源页URL或渠道',
+                                   etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
+                                   PRIMARY KEY (event_id),
+                                   KEY idx_list_date   (date_key),
+                                   KEY idx_list_item   (item_id),
+                                   KEY idx_list_user   (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 列表页曝光与点击日志';
 
@@ -212,18 +210,19 @@ CREATE TABLE ods_event_listing (
 -- 10. 搜索日志
 -- 用于统计搜索词热度、搜索转化率等
 -- =====================================================================
+drop table if exists ods_event_search;
 CREATE TABLE ods_event_search (
-      search_id       BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
-      user_id         BIGINT       DEFAULT NULL           COMMENT '买家ID，访客可为空',
-      date_key        INT          NOT NULL               COMMENT '搜索日期键(YYYYMMDD)',
-      search_time     DATETIME     NOT NULL               COMMENT '搜索时间戳',
-      keyword         VARCHAR(128) NOT NULL               COMMENT '搜索关键词',
-      result_count    INT          NOT NULL               COMMENT '搜索结果总数',
-      click_count     INT          NOT NULL DEFAULT 0     COMMENT '搜索后点击商品次数',
-      etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
-      PRIMARY KEY (search_id),
-      KEY idx_search_date (date_key),
-      KEY idx_search_user (user_id)
+                                  search_id       BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
+                                  user_id         BIGINT       DEFAULT NULL           COMMENT '买家ID，访客可为空',
+                                  date_key        INT          NOT NULL               COMMENT '搜索日期键(YYYYMMDD)',
+                                  search_time     DATETIME     NOT NULL               COMMENT '搜索时间戳',
+                                  keyword         VARCHAR(128) NOT NULL               COMMENT '搜索关键词',
+                                  result_count    INT          NOT NULL               COMMENT '搜索结果总数',
+                                  click_count     INT          NOT NULL DEFAULT 0     COMMENT '搜索后点击商品次数',
+                                  etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
+                                  PRIMARY KEY (search_id),
+                                  KEY idx_search_date (date_key),
+                                  KEY idx_search_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 用户搜索日志';
 
@@ -232,19 +231,20 @@ CREATE TABLE ods_event_search (
 -- 11. 优惠券领取与使用日志
 -- 用于统计券的发放量、使用量及使用率
 -- =====================================================================
+drop table if exists ods_event_coupon;
 CREATE TABLE ods_event_coupon (
-      coupon_event_id BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
-      user_id         BIGINT       NOT NULL               COMMENT '买家ID',
-      coupon_id       BIGINT       NOT NULL               COMMENT '优惠券ID',
-      date_key        INT          NOT NULL               COMMENT '事件日期键(YYYYMMDD)',
-      event_time      DATETIME     NOT NULL               COMMENT '领取/使用时间',
-      action_type     ENUM('RECEIVE','USE') NOT NULL      COMMENT '动作类型',
-      order_id        BIGINT       DEFAULT NULL           COMMENT '使用且订单ID',
-      etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
-      PRIMARY KEY (coupon_event_id),
-      KEY idx_coupon_date (date_key),
-      KEY idx_coupon_user (user_id),
-      KEY idx_coupon_id   (coupon_id)
+                                  coupon_event_id BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
+                                  user_id         BIGINT       NOT NULL               COMMENT '买家ID',
+                                  coupon_id       BIGINT       NOT NULL               COMMENT '优惠券ID',
+                                  date_key        INT          NOT NULL               COMMENT '事件日期键(YYYYMMDD)',
+                                  event_time      DATETIME     NOT NULL               COMMENT '领取/使用时间',
+                                  action_type     ENUM('RECEIVE','USE') NOT NULL      COMMENT '动作类型',
+                                  order_id        BIGINT       DEFAULT NULL           COMMENT '使用且订单ID',
+                                  etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
+                                  PRIMARY KEY (coupon_event_id),
+                                  KEY idx_coupon_date (date_key),
+                                  KEY idx_coupon_user (user_id),
+                                  KEY idx_coupon_id   (coupon_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 优惠券领取与使用日志';
 
@@ -253,18 +253,19 @@ CREATE TABLE ods_event_coupon (
 -- 12. 商品分享日志
 -- 用于统计分享次数及渠道分布
 -- =====================================================================
+drop table if exists ods_event_share;
 CREATE TABLE ods_event_share (
-     share_id        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
-     user_id         BIGINT       NOT NULL               COMMENT '分享者买家ID',
-     item_id         BIGINT       NOT NULL               COMMENT '商品ID',
-     date_key        INT          NOT NULL               COMMENT '分享日期键(YYYYMMDD)',
-     share_time      DATETIME     NOT NULL               COMMENT '分享时间戳',
-     channel         VARCHAR(32)  NOT NULL               COMMENT '分享渠道，如微信、微博',
-     etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
-     PRIMARY KEY (share_id),
-     KEY idx_share_date (date_key),
-     KEY idx_share_item (item_id),
-     KEY idx_share_user (user_id)
+                                 share_id        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
+                                 user_id         BIGINT       NOT NULL               COMMENT '分享者买家ID',
+                                 item_id         BIGINT       NOT NULL               COMMENT '商品ID',
+                                 date_key        INT          NOT NULL               COMMENT '分享日期键(YYYYMMDD)',
+                                 share_time      DATETIME     NOT NULL               COMMENT '分享时间戳',
+                                 channel         VARCHAR(32)  NOT NULL               COMMENT '分享渠道，如微信、微博',
+                                 etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
+                                 PRIMARY KEY (share_id),
+                                 KEY idx_share_date (date_key),
+                                 KEY idx_share_item (item_id),
+                                 KEY idx_share_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 商品分享日志';
 
@@ -273,19 +274,20 @@ CREATE TABLE ods_event_share (
 -- 13. 店铺收藏与访问日志
 -- 用于统计店铺收藏人数、访问人数及渠道
 -- =====================================================================
+drop table if exists ods_event_shop;
 CREATE TABLE ods_event_shop (
-    shop_event_id   BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
-    user_id         BIGINT       NOT NULL               COMMENT '买家ID',
-    shop_id         BIGINT       NOT NULL               COMMENT '店铺ID',
-    date_key        INT          NOT NULL               COMMENT '事件日期键(YYYYMMDD)',
-    event_time      DATETIME     NOT NULL               COMMENT '事件时间戳',
-    action_type     ENUM('VISIT','FAVORITE','UNFAVORITE') NOT NULL COMMENT '访问/收藏/取消',
-    referrer        VARCHAR(256) DEFAULT NULL           COMMENT '来源渠道或页面',
-    etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
-    PRIMARY KEY (shop_event_id),
-    KEY idx_shop_date  (date_key),
-    KEY idx_shop_user  (user_id),
-    KEY idx_shop_id    (shop_id)
+                                shop_event_id   BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
+                                user_id         BIGINT       NOT NULL               COMMENT '买家ID',
+                                shop_id         BIGINT       NOT NULL               COMMENT '店铺ID',
+                                date_key        INT          NOT NULL               COMMENT '事件日期键(YYYYMMDD)',
+                                event_time      DATETIME     NOT NULL               COMMENT '事件时间戳',
+                                action_type     ENUM('VISIT','FAVORITE','UNFAVORITE') NOT NULL COMMENT '访问/收藏/取消',
+                                referrer        VARCHAR(256) DEFAULT NULL           COMMENT '来源渠道或页面',
+                                etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
+                                PRIMARY KEY (shop_event_id),
+                                KEY idx_shop_date  (date_key),
+                                KEY idx_shop_user  (user_id),
+                                KEY idx_shop_id    (shop_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 店铺访问与收藏日志';
 
@@ -294,38 +296,40 @@ CREATE TABLE ods_event_shop (
 -- 14. 交易关闭与支付失败日志
 -- 用于区分用户放弃支付、超时关闭等场景
 -- =====================================================================
+drop table if exists ods_event_trade_status;
 CREATE TABLE ods_event_trade_status (
-       status_id       BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
-       order_id        BIGINT       NOT NULL               COMMENT '订单ID',
-       user_id         BIGINT       NOT NULL               COMMENT '买家ID',
-       date_key        INT          NOT NULL               COMMENT '事件日期键(YYYYMMDD)',
-       event_time      DATETIME     NOT NULL               COMMENT '事件时间戳',
-       status_type     ENUM('CLOSE_TIMEOUT','CLOSE_USER','PAY_FAIL') NOT NULL COMMENT '类型',
-       remark          VARCHAR(256) DEFAULT NULL           COMMENT '失败原因或备注',
-       etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
-       PRIMARY KEY (status_id),
-       KEY idx_status_date (date_key),
-       KEY idx_status_user (user_id),
-       KEY idx_status_order (order_id)
+                                        status_id       BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
+                                        order_id        BIGINT       NOT NULL               COMMENT '订单ID',
+                                        user_id         BIGINT       NOT NULL               COMMENT '买家ID',
+                                        date_key        INT          NOT NULL               COMMENT '事件日期键(YYYYMMDD)',
+                                        event_time      DATETIME     NOT NULL               COMMENT '事件时间戳',
+                                        status_type     ENUM('CLOSE_TIMEOUT','CLOSE_USER','PAY_FAIL') NOT NULL COMMENT '类型',
+                                        remark          VARCHAR(256) DEFAULT NULL           COMMENT '失败原因或备注',
+                                        etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
+                                        PRIMARY KEY (status_id),
+                                        KEY idx_status_date (date_key),
+                                        KEY idx_status_user (user_id),
+                                        KEY idx_status_order (order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 交易关闭与支付失败日志';
 
-    
+
 -- =====================================================================
 -- 15. 物流时效与签收日志
 -- 用于统计发货、揽件、运输、签收各环节时长
 -- =====================================================================
+drop table if exists ods_event_logistics;
 CREATE TABLE ods_event_logistics (
-    logistics_id    BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
-    order_id        BIGINT       NOT NULL               COMMENT '订单ID',
-    date_key        INT          NOT NULL               COMMENT '事件日期键(YYYYMMDD)',
-    event_time      DATETIME     NOT NULL               COMMENT '事件时间戳',
-    stage           ENUM('SHIP','PICKUP','IN_TRANSIT','DELIVERED') NOT NULL COMMENT '阶段',
-    location        VARCHAR(128) DEFAULT NULL           COMMENT '当前地或网点',
-    etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
-    PRIMARY KEY (logistics_id),
-    KEY idx_logi_date  (date_key),
-    KEY idx_logi_order (order_id)
+                                     logistics_id    BIGINT       NOT NULL AUTO_INCREMENT COMMENT '事件主键',
+                                     order_id        BIGINT       NOT NULL               COMMENT '订单ID',
+                                     date_key        INT          NOT NULL               COMMENT '事件日期键(YYYYMMDD)',
+                                     event_time      DATETIME     NOT NULL               COMMENT '事件时间戳',
+                                     stage           ENUM('SHIP','PICKUP','IN_TRANSIT','DELIVERED') NOT NULL COMMENT '阶段',
+                                     location        VARCHAR(128) DEFAULT NULL           COMMENT '当前地或网点',
+                                     etl_time        DATETIME     NOT NULL               COMMENT 'ODS 写入时间',
+                                     PRIMARY KEY (logistics_id),
+                                     KEY idx_logi_date  (date_key),
+                                     KEY idx_logi_order (order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     COMMENT='ODS 原始 – 物流节点事件日志';
 
