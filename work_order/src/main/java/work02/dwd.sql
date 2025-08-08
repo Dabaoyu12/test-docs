@@ -1,7 +1,6 @@
--- 文件：dwd_create_tables.sql
 USE gmall_work_02;
 
--- 1. dwd_trade_order_detail: 支付订单明细（保留已支付记录）
+-- 1.支付订单明细（保留已支付记录）
 DROP TABLE IF EXISTS dwd_trade_order_detail;
 CREATE TABLE dwd_trade_order_detail (
         order_id        BIGINT    NOT NULL COMMENT '订单ID',
@@ -19,7 +18,7 @@ CREATE TABLE dwd_trade_order_detail (
         INDEX idx_prod (product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DWD: 支付订单明细';
 
--- 2. dwd_user_visit_detail: 商品访问明细
+-- 2.商品访问明细
 DROP TABLE IF EXISTS dwd_user_visit_detail;
 CREATE TABLE dwd_user_visit_detail (
                                        log_id          BIGINT    NOT NULL COMMENT '日志ID',
@@ -36,7 +35,7 @@ CREATE TABLE dwd_user_visit_detail (
                                        INDEX idx_prod (product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DWD: 商品详情页访问明细';
 
--- 3. dwd_search_keyword_detail: 搜索行为明细
+-- 3. 搜索行为明细
 DROP TABLE IF EXISTS dwd_search_keyword_detail;
 CREATE TABLE dwd_search_keyword_detail (
            log_id            BIGINT    NOT NULL COMMENT '日志ID',
@@ -51,7 +50,7 @@ CREATE TABLE dwd_search_keyword_detail (
            INDEX idx_keyword (search_keyword)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DWD: 搜索行为明细';
 
--- 4. dwd_traffic_source_detail: 流量来源明细
+-- 4.流量来源明细
 DROP TABLE IF EXISTS dwd_traffic_source_detail;
 CREATE TABLE dwd_traffic_source_detail (
            log_id          BIGINT    NOT NULL COMMENT '日志ID',
@@ -64,7 +63,7 @@ CREATE TABLE dwd_traffic_source_detail (
            INDEX idx_source (source_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DWD: 流量来源明细';
 
--- 5. dwd_cart_action_detail: 购物车操作明细
+-- 5. 购物车操作明细
 DROP TABLE IF EXISTS dwd_cart_action_detail;
 CREATE TABLE dwd_cart_action_detail (
         log_id          BIGINT    NOT NULL COMMENT '日志ID',
@@ -80,7 +79,7 @@ CREATE TABLE dwd_cart_action_detail (
         INDEX idx_prod (product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DWD: 购物车操作明细';
 
--- 6. dwd_coupon_usage_detail: 优惠券使用明细
+-- 6.优惠券使用明细
 DROP TABLE IF EXISTS dwd_coupon_usage_detail;
 CREATE TABLE dwd_coupon_usage_detail (
          log_id          BIGINT    NOT NULL COMMENT '日志ID',
@@ -96,7 +95,7 @@ CREATE TABLE dwd_coupon_usage_detail (
          INDEX idx_coupon (coupon_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DWD: 优惠券使用明细';
 
--- 7. dwd_price_change_detail: 价格变动明细
+-- 7.价格变动明细
 DROP TABLE IF EXISTS dwd_price_change_detail;
 CREATE TABLE dwd_price_change_detail (
          change_id       BIGINT    NOT NULL COMMENT '变更日志ID',
@@ -112,7 +111,7 @@ CREATE TABLE dwd_price_change_detail (
 
 
 
--- 1. 填充 dwd_trade_order_detail
+
 INSERT INTO dwd_trade_order_detail
 SELECT
     hi.order_id,
@@ -131,7 +130,7 @@ FROM ods_order_header hi
 WHERE hi.pay_time IS NOT NULL
   AND hi.order_status = 'PAID';
 
--- 2. 填充 dwd_user_visit_detail
+
 INSERT INTO dwd_user_visit_detail
 SELECT
     log_id,
@@ -146,7 +145,7 @@ SELECT
     DATE(event_time) AS dt
 FROM ods_product_visit_log;
 
--- 3. 填充 dwd_search_keyword_detail
+
 INSERT INTO dwd_search_keyword_detail
 SELECT
     log_id,
@@ -159,7 +158,7 @@ SELECT
     DATE(search_time) AS dt
 FROM ods_search_log;
 
--- 4. 填充 dwd_traffic_source_detail
+
 INSERT INTO dwd_traffic_source_detail
 SELECT
     log_id,
@@ -170,7 +169,7 @@ SELECT
     DATE(visit_time) AS dt
 FROM ods_traffic_source_log;
 
--- 5. 填充 dwd_cart_action_detail
+
 INSERT INTO dwd_cart_action_detail
 SELECT
     log_id,
@@ -184,7 +183,7 @@ SELECT
     DATE(action_time) AS dt
 FROM ods_cart_action_log;
 
--- 6. 填充 dwd_coupon_usage_detail
+
 INSERT INTO dwd_coupon_usage_detail
 SELECT
     log_id,
@@ -198,7 +197,7 @@ SELECT
     DATE(COALESCE(use_time, issue_time)) AS dt
 FROM ods_coupon_usage_log;
 
--- 7. 填充 dwd_price_change_detail
+
 INSERT INTO dwd_price_change_detail
 SELECT
     change_id,

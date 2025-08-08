@@ -781,9 +781,7 @@ END$$
 
 DELIMITER ;
 
--- ==============================================
--- 执行所有数据生成存储过程
--- ==============================================
+
 CALL gen_ods_product_info();
 CALL gen_ods_sku_info();
 CALL gen_ods_order_header();

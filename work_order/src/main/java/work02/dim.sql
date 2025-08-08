@@ -64,7 +64,7 @@ CREATE TABLE dim_traffic_source (
 
 
 
--- 1. 填充 dim_date （示例：2025-01-01 到 2025-12-31）
+
 INSERT INTO dim_date (date_id, day_of_week, is_weekend, week_of_year, month, quarter, year)
 SELECT
     d AS date_id,
@@ -87,7 +87,7 @@ FROM (
          WHERE DATE_ADD('2025-01-01', INTERVAL t.n DAY) <= '2025-12-31'
      ) dates;
 
--- 2. 填充 dim_category （请根据实际类目结构调整）
+
 SET FOREIGN_KEY_CHECKS=0;
 TRUNCATE TABLE dim_category;
 SET FOREIGN_KEY_CHECKS=1;
@@ -99,7 +99,6 @@ SELECT
     ANY_VALUE(r.name)     AS category_name,
     ANY_VALUE(r.parent_id) AS parent_id
 FROM (
-         -- 原始候选行
          SELECT first_cat_id AS id, 1 AS level,
                 CAST(first_cat_id AS CHAR) AS name,
                 NULL AS parent_id
@@ -124,7 +123,6 @@ FROM (
          FROM ods_product_info WHERE third_cat_id IS NOT NULL
      ) AS r
          JOIN (
-    -- 每个 id 的最高层级
     SELECT x.id, MAX(x.level) AS level
     FROM (
              SELECT first_cat_id AS id, 1 AS level FROM ods_product_info WHERE first_cat_id IS NOT NULL
@@ -138,24 +136,24 @@ FROM (
               ON r.id = m.id AND r.level = m.level
 GROUP BY m.id, m.level;
 
--- 3. 填充 dim_brand （请替换为品牌全量列表或同步脚本）
+
 INSERT INTO dim_brand (brand_id, brand_name)
 SELECT DISTINCT brand_id, CONCAT('品牌-', brand_id)
 FROM ods_product_info;
 
--- 4. 填充 dim_product
+
 INSERT INTO dim_product (product_id, product_name, brand_id, vendor_id, first_cat_id, second_cat_id, third_cat_id, create_time)
 SELECT
     product_id, product_name, brand_id, vendor_id,
     first_cat_id, second_cat_id, third_cat_id, create_time
 FROM ods_product_info;
 
--- 5. 填充 dim_sku
+
 INSERT INTO dim_sku (sku_id, product_id, sku_name, create_time)
 SELECT sku_id, product_id, sku_name, create_time
 FROM ods_sku_info;
 
--- 6. 填充 dim_traffic_source
+
 INSERT INTO dim_traffic_source (source_type, source_name)
 SELECT DISTINCT source_type,
                 source_type AS source_name
