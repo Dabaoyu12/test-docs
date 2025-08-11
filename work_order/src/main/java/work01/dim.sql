@@ -1,155 +1,156 @@
-use gmall_work_01;
+-- 切换到指定数据库 (Hive 中 USE 语句用法相同)
+USE gmall_work_01;
 
--- 商品维度表（核心维度）
+-- 商品维度表
 CREATE TABLE dim_item (
-        item_id BIGINT PRIMARY KEY COMMENT '商品ID',
-        item_name VARCHAR(255) NOT NULL COMMENT '商品名称',
-        category_id INT NOT NULL COMMENT '叶子类目ID',
-        category_name VARCHAR(100) NOT NULL COMMENT '叶子类目名称',
-        parent_category_id INT COMMENT '父类目ID',
-        parent_category_name VARCHAR(100) COMMENT '父类目名称',
-        price DECIMAL(10,2) NOT NULL COMMENT '商品价格',
-        is_active TINYINT(1) DEFAULT 1 COMMENT '是否在售',
-        etl_time DATETIME NOT NULL COMMENT 'ETL时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品维度表';
-    
--- 类目维度表（支持层级分析）
-drop table dim_category;
+    item_id BIGINT COMMENT '商品ID',
+    item_name STRING COMMENT '商品名称',
+    category_id INT COMMENT '叶子类目ID',
+    category_name STRING COMMENT '叶子类目名称',
+    parent_category_id INT COMMENT '父类目ID',
+    parent_category_name STRING COMMENT '父类目名称',
+    price DECIMAL(10,2) COMMENT '商品价格',
+    is_active TINYINT COMMENT '是否在售',
+    etl_time TIMESTAMP COMMENT 'ETL时间'
+) COMMENT '商品维度表'
+    STORED AS ORC;
+
+-- 类目维度表
+DROP TABLE IF EXISTS dim_category;
 CREATE TABLE dim_category (
-    category_id INT PRIMARY KEY COMMENT '类目ID',
-    category_name VARCHAR(100) NOT NULL COMMENT '类目名称',
-    level TINYINT NOT NULL COMMENT '类目层级(1-一级 2-二级 3-叶子)',
+    category_id INT COMMENT '类目ID',
+    category_name STRING COMMENT '类目名称',
+    level TINYINT COMMENT '类目层级(1-一级 2-二级 3-叶子)',
     parent_id INT COMMENT '父类目ID',
-    path VARCHAR(255) COMMENT '类目路径',
-    etl_time DATETIME NOT NULL COMMENT 'ETL时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='类目维度表';
+    path STRING COMMENT '类目路径',
+    etl_time TIMESTAMP COMMENT 'ETL时间'
+) COMMENT '类目维度表'
+    STORED AS ORC;
 
--- 用户维度表（新老买家标识）
+-- 用户维度表
 CREATE TABLE dim_user (
-        user_id BIGINT PRIMARY KEY COMMENT '用户ID',
-        user_name VARCHAR(100) COMMENT '用户名',
-        reg_date DATE NOT NULL COMMENT '注册日期',
-        is_vip TINYINT(1) DEFAULT 0 COMMENT '是否VIP',
-        last_payment_date DATE COMMENT '最近支付日期',
-        etl_time DATETIME NOT NULL COMMENT 'ETL时间',
-        KEY idx_reg_date (reg_date)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户维度表';
+    user_id BIGINT COMMENT '用户ID',
+    user_name STRING COMMENT '用户名',
+    reg_date DATE COMMENT '注册日期',
+    is_vip TINYINT COMMENT '是否VIP',
+    last_payment_date DATE COMMENT '最近支付日期',
+    etl_time TIMESTAMP COMMENT 'ETL时间'
+) COMMENT '用户维度表'
+    STORED AS ORC;
 
--- 时间维度表（支持多粒度分析）
+-- 时间维度表
 CREATE TABLE dim_date (
-        date_key INT PRIMARY KEY COMMENT '日期键YYYYMMDD',
-        date DATE NOT NULL COMMENT '日期',
-        day TINYINT NOT NULL COMMENT '日',
-        month TINYINT NOT NULL COMMENT '月',
-        year SMALLINT NOT NULL COMMENT '年',
-        week_of_year TINYINT COMMENT '年内周序',
-        quarter TINYINT COMMENT '季度',
-        is_weekend TINYINT(1) COMMENT '是否周末',
-        etl_time DATETIME NOT NULL COMMENT 'ETL时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='时间维度表';
+    date_key INT COMMENT '日期键YYYYMMDD',
+    date_value DATE COMMENT '日期',
+    day TINYINT COMMENT '日',
+    month TINYINT COMMENT '月',
+    year SMALLINT COMMENT '年',
+    week_of_year TINYINT COMMENT '年内周序',
+    quarter TINYINT COMMENT '季度',
+    is_weekend TINYINT COMMENT '是否周末',
+    etl_time TIMESTAMP COMMENT 'ETL时间'
+) COMMENT '时间维度表'
+    STORED AS ORC;
 
 -- 终端维度表
-
 CREATE TABLE dim_terminal (
-    terminal_code VARCHAR(20) PRIMARY KEY COMMENT '终端代码',
-    terminal_name VARCHAR(50) NOT NULL COMMENT '终端名称',
-    device_type ENUM('PC','Mobile','Tablet') COMMENT '设备类型',
-    etl_time DATETIME NOT NULL COMMENT 'ETL时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='终端维度表';
+    terminal_code STRING COMMENT '终端代码',
+    terminal_name STRING COMMENT '终端名称',
+    device_type STRING COMMENT '设备类型',
+    etl_time TIMESTAMP COMMENT 'ETL时间'
+) COMMENT '终端维度表'
+    STORED AS ORC;
 
 -- 活动维度表
 CREATE TABLE dim_activity (
-    activity_id VARCHAR(20) PRIMARY KEY COMMENT '活动ID',
-    activity_name VARCHAR(100) NOT NULL COMMENT '活动名称',
-    activity_type ENUM('NORMAL','PRESALE','JUHUASUAN') NOT NULL COMMENT '活动类型',
-    presale_stage VARCHAR(32) DEFAULT NULL COMMENT '预售阶段',
-    start_date DATE NOT NULL COMMENT '活动开始日期',
-    end_date DATE NOT NULL COMMENT '活动结束日期',
-    etl_time DATETIME NOT NULL COMMENT 'ETL时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='活动维度表';
+    activity_id STRING COMMENT '活动ID',
+    activity_name STRING COMMENT '活动名称',
+    activity_type STRING COMMENT '活动类型',
+    presale_stage STRING COMMENT '预售阶段',
+    start_date DATE COMMENT '活动开始日期',
+    end_date DATE COMMENT '活动结束日期',
+    etl_time TIMESTAMP COMMENT 'ETL时间'
+) COMMENT '活动维度表'
+    STORED AS ORC;
 
 -- 支付方式维度表
 CREATE TABLE dim_payment_method (
-    method_id VARCHAR(20) PRIMARY KEY COMMENT '支付方式ID',
-    method_name VARCHAR(100) NOT NULL COMMENT '支付方式名称',
-    is_online TINYINT(1) DEFAULT 1 COMMENT '是否在线支付',
-    etl_time DATETIME NOT NULL COMMENT 'ETL时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='支付方式维度表';
+          method_id STRING COMMENT '支付方式ID',
+          method_name STRING COMMENT '支付方式名称',
+          is_online TINYINT COMMENT '是否在线支付',
+          etl_time TIMESTAMP COMMENT 'ETL时间'
+) COMMENT '支付方式维度表'
+    STORED AS ORC;
 
+-- 活动类型维度表
 CREATE TABLE dim_activity_type (
-    activity_type VARCHAR(20) PRIMARY KEY COMMENT '活动类型',
-    activity_name VARCHAR(100) NOT NULL COMMENT '活动名称',
-    etl_time DATETIME NOT NULL COMMENT 'ETL时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='活动类型维度表';
+         activity_type STRING COMMENT '活动类型',
+         activity_name STRING COMMENT '活动名称',
+         etl_time TIMESTAMP COMMENT 'ETL时间'
+) COMMENT '活动类型维度表'
+    STORED AS ORC;
 
-
-
--- 填充商品维度表（基于ODS事件中的商品ID范围）
-INSERT INTO dim_item (item_id, item_name, category_id, category_name, parent_category_id, parent_category_name, price, etl_time)
+-- 填充商品维度表
+INSERT INTO dim_item
 SELECT
     item_id,
     CONCAT('商品', item_id),
-    FLOOR(RAND()*100)+1,  -- 随机分配类目
+    FLOOR(RAND()*100)+1,
     CONCAT('类目', FLOOR(RAND()*100)+1),
     FLOOR(RAND()*10)+1,
     CONCAT('父类', FLOOR(RAND()*10)+1),
-    ROUND(RAND()*500+10, 2),  -- 价格范围10-510
-    NOW()
+    ROUND(RAND()*500+10, 2),
+    1,  -- 默认在售
+    CURRENT_TIMESTAMP()
 FROM (
          SELECT DISTINCT item_id
-         FROM ods_event_item_visit  -- 任意ODS表获取商品ID
+         FROM ods_event_item_visit
          LIMIT 2000
      ) t;
 
+-- 填充类目维度表
+INSERT INTO dim_category
+WITH categories AS (
+    SELECT
+        100 + root_id AS category_id,
+        CONCAT('Root Category ', root_id) AS category_name,
+        1 AS level,
+        NULL AS parent_id,
+        CAST(100 + root_id AS STRING) AS path
+    FROM (SELECT 1 AS root_id UNION ALL SELECT 2 UNION ALL SELECT 3) root_cat
 
--- 修复后的数据插入脚本
-INSERT INTO dim_category (category_id, category_name, level, parent_id, path, etl_time)
+    UNION ALL
+
+    SELECT
+        1000 + root_id * 10 + sub_id AS category_id,
+        CONCAT('Subcategory ', root_id, '-', sub_id) AS category_name,
+        2 AS level,
+        100 + root_id AS parent_id,
+        CONCAT_WS('.', CAST(100 + root_id AS STRING), CAST(1000 + root_id*10 + sub_id AS STRING)) AS path
+    FROM (
+             SELECT roots.root_id, subs.sub_id
+             FROM (SELECT 1 AS root_id UNION ALL SELECT 2 UNION ALL SELECT 3) roots
+                      CROSS JOIN (SELECT 1 AS sub_id UNION ALL SELECT 2) subs
+         ) sub_cat
+)
 SELECT
     category_id,
     category_name,
     level,
     parent_id,
     path,
-    NOW()
-FROM (
-         -- Level 1: Root categories
-         SELECT
-             100 + root_id AS category_id,
-             CONCAT('Root Category ', root_id) AS category_name,
-             1 AS level,
-             NULL AS parent_id,
-             CAST(100 + root_id AS CHAR) AS path,
-             root_id
-         FROM (
-                  SELECT 1 AS root_id UNION SELECT 2 UNION SELECT 3
-              ) root_cat
+    CURRENT_TIMESTAMP()
+FROM categories;
 
-         UNION ALL
-
-         -- Level 2: Subcategories
-         SELECT
-             1000 + root_id * 10 + sub_id AS category_id,
-             CONCAT('Subcategory ', root_id, '-', sub_id) AS category_name,
-             2 AS level,
-             100 + root_id AS parent_id,
-             CONCAT(100 + root_id, '.', 1000 + root_id * 10 + sub_id) AS path,
-             sub_id
-         FROM (
-                  SELECT root_id, sub_id
-                  FROM (SELECT 1 AS root_id UNION SELECT 2 UNION SELECT 3) roots
-                           CROSS JOIN (SELECT 1 AS sub_id UNION SELECT 2) subs
-              ) sub_cat
-     ) all_categories;
-
--- 填充用户维度（基于ODS中的用户ID）
-INSERT INTO dim_user (user_id, user_name, reg_date, is_vip, last_payment_date, etl_time)
+-- 填充用户维度表
+INSERT INTO dim_user
 SELECT
     user_id,
     CONCAT('用户', user_id),
-    DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*1000) DAY),
-    IF(RAND()>0.7, 1, 0),
-    IF(RAND()>0.3, DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*100) DAY), NULL),
-    NOW()
+    DATE_SUB(CURRENT_DATE(), CAST(FLOOR(RAND()*1000) AS INT)),
+    IF(RAND() > 0.7, 1, 0),
+    IF(RAND() > 0.3, DATE_SUB(CURRENT_DATE(), CAST(FLOOR(RAND()*100) AS INT)), NULL),
+    CURRENT_TIMESTAMP()
 FROM (
          SELECT DISTINCT user_id
          FROM ods_event_item_visit
@@ -157,61 +158,56 @@ FROM (
          LIMIT 5000
      ) t;
 
--- 填充时间维度（覆盖数据时间范围）
-INSERT INTO dim_date (date_key, date, day, month, year, week_of_year, quarter, is_weekend, etl_time)
+-- 填充时间维度表
+INSERT INTO dim_date
 SELECT
-    DATE_FORMAT(dt, '%Y%m%d'),
+    CAST(DATE_FORMAT(dt, 'yyyyMMdd') AS INT),
     dt,
     DAY(dt),
     MONTH(dt),
     YEAR(dt),
-    WEEK(dt, 3),
+    WEEKOFYEAR(dt),
     QUARTER(dt),
-    DAYOFWEEK(dt) IN (1,7),
-    NOW()
+    IF(DAYOFWEEK(dt) IN (1,7), 1, 0),
+    CURRENT_TIMESTAMP()
 FROM (
-         SELECT DATE_SUB(CURDATE(), INTERVAL n DAY) dt
+         SELECT DATE_SUB(CURRENT_DATE(), n) AS dt
          FROM (
-                  SELECT a.N + b.N * 10 + c.N * 100 AS n
-                  FROM
-                      (SELECT 0 AS N UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) a,
-                      (SELECT 0 AS N UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) b,
-                      (SELECT 0 AS N UNION SELECT 1) c
-                  ORDER BY n
+                  SELECT pos AS n
+                  FROM (SELECT split(space(400), ' ') AS arr) tmp
+     LATERAL VIEW posexplode(tmp.arr) exploded_table AS pos, val
               ) seq
-         WHERE n BETWEEN 0 AND 400  -- 覆盖400天范围
      ) dates;
 
-
-
-INSERT INTO dim_payment_method (method_id, method_name, is_online, etl_time)
+-- 填充支付方式维度表
+INSERT INTO dim_payment_method
 SELECT
-    DISTINCT payment_method AS method_id,
+    DISTINCT payment_method,
              CASE payment_method
                  WHEN 'ALIPAY' THEN '支付宝'
                  WHEN 'WECHAT' THEN '微信支付'
                  WHEN 'CCB' THEN '建设银行'
                  ELSE '其他支付'
-                 END AS method_name,
-             1 AS is_online,  -- 假设都是在线支付
-             NOW()
+                 END,
+             1,
+             CURRENT_TIMESTAMP()
 FROM ods_event_payment;
 
-
-INSERT INTO dim_terminal (terminal_code, terminal_name, device_type, etl_time)
+-- 填充终端维度表
+INSERT INTO dim_terminal
 SELECT
-    DISTINCT terminal AS terminal_code,
+    DISTINCT terminal,
              CASE terminal
                  WHEN 'PC' THEN '电脑端'
                  WHEN 'Wireless' THEN '无线端'
                  WHEN 'App' THEN '应用端'
                  ELSE terminal
-                 END AS terminal_name,
+                 END,
              CASE terminal
                  WHEN 'PC' THEN 'PC'
                  ELSE 'Mobile'
-                 END AS device_type,
-             NOW()
+                 END,
+             CURRENT_TIMESTAMP()
 FROM (
          SELECT terminal FROM ods_event_item_visit
          UNION
@@ -220,8 +216,8 @@ FROM (
          SELECT terminal FROM ods_event_item_micro_detail
      ) t;
 
-
-INSERT INTO dim_activity_type (activity_type, activity_name, etl_time)
+-- 填充活动类型维度表
+INSERT INTO dim_activity_type
 SELECT
     activity_type,
     CASE activity_type
@@ -229,8 +225,8 @@ SELECT
         WHEN 'PRESALE' THEN '预售活动'
         WHEN 'JUHUASUAN' THEN '聚划算'
         ELSE activity_type
-        END AS activity_name,
-    NOW()
+        END,
+    CURRENT_TIMESTAMP()
 FROM (
          SELECT
              CASE
@@ -242,48 +238,49 @@ FROM (
          GROUP BY activity_type
      ) t;
 
-
-INSERT INTO dim_activity (activity_id, activity_name, activity_type, presale_stage, start_date, end_date, etl_time)
+-- 填充活动维度表
+INSERT INTO dim_activity
 SELECT
     'NORMAL' AS activity_id,
     '普通商品活动' AS activity_name,
     'NORMAL' AS activity_type,
     NULL AS presale_stage,
-    CURDATE() - INTERVAL 60 DAY,
-    CURDATE() + INTERVAL 30 DAY,
-    NOW()
-FROM dual
-WHERE NOT EXISTS (SELECT 1 FROM dim_activity WHERE activity_id = 'NORMAL');
+    DATE_SUB(CURRENT_DATE(), 60),
+    DATE_ADD(CURRENT_DATE(), 30),
+    CURRENT_TIMESTAMP()
+WHERE NOT EXISTS (
+    SELECT 1 FROM dim_activity WHERE activity_id = 'NORMAL'
+);
 
-INSERT INTO dim_activity (activity_id, activity_name, activity_type, presale_stage, start_date, end_date, etl_time)
+INSERT INTO dim_activity
 SELECT
-    CONCAT('PRESALE-', stage) AS activity_id,
+    CONCAT('PRESALE-', stage),
     CONCAT('预售活动-',
            CASE stage
                WHEN 'DEPOSIT' THEN '定金阶段'
                WHEN 'FINAL' THEN '尾款阶段'
                ELSE '全款阶段'
-               END) AS activity_name,
-    'PRESALE' AS activity_type,
-    stage AS presale_stage,
-    CURDATE() - INTERVAL 30 DAY,
-    CURDATE() + INTERVAL 15 DAY,
-    NOW()
+               END),
+    'PRESALE',
+    stage,
+    DATE_SUB(CURRENT_DATE(), 30),
+    DATE_ADD(CURRENT_DATE(), 15),
+    CURRENT_TIMESTAMP()
 FROM (
          SELECT DISTINCT presale_stage AS stage
          FROM ods_event_payment
          WHERE is_presale = 1 AND presale_stage IS NOT NULL
      ) stages;
 
-
-INSERT INTO dim_activity (activity_id, activity_name, activity_type, presale_stage, start_date, end_date, etl_time)
+INSERT INTO dim_activity
 SELECT
-    'JUHUASUAN' AS activity_id,
-    '聚划算活动' AS activity_name,
-    'JUHUASUAN' AS activity_type,
-    NULL AS presale_stage,
-    CURDATE() - INTERVAL 15 DAY,
-    CURDATE() + INTERVAL 7 DAY,
-    NOW()
-FROM dual
-WHERE NOT EXISTS (SELECT 1 FROM dim_activity WHERE activity_id = 'JUHUASUAN');
+    'JUHUASUAN',
+    '聚划算活动',
+    'JUHUASUAN',
+    NULL,
+    DATE_SUB(CURRENT_DATE(), 15),
+    DATE_ADD(CURRENT_DATE(), 7),
+    CURRENT_TIMESTAMP()
+WHERE NOT EXISTS (
+    SELECT 1 FROM dim_activity WHERE activity_id = 'JUHUASUAN'
+);

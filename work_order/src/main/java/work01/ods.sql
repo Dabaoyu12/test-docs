@@ -229,7 +229,6 @@ CREATE TABLE ods_event_search (
 
 -- =====================================================================
 -- 11. 优惠券领取与使用日志
--- 用于统计券的发放量、使用量及使用率
 -- =====================================================================
 drop table if exists ods_event_coupon;
 CREATE TABLE ods_event_coupon (
@@ -537,22 +536,70 @@ END;
 -- =====================================================================
 -- 9. 列表页曝光与点击日志 ods_event_listing
 -- =====================================================================
-CREATE PROCEDURE fill_event_listing()
+# CREATE PROCEDURE fill_event_listing()
+# BEGIN
+#     DECLARE i INT DEFAULT 1;
+#     WHILE i <= 1000 DO
+#             INSERT INTO ods_event_listing
+#             (user_id, item_id, date_key, event_time, page_type, action_type, keyword, referrer, etl_time)
+#             VALUES
+#                 (
+#                     IF(RAND()>0.2, FLOOR(1+RAND()*5000), NULL),
+#                     FLOOR(1 + RAND()*2000),
+#                     DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
+#                     DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
+#                     ELT(FLOOR(1 + RAND()*3),'SEARCH','CATEGORY','RECOMMEND'),
+#                     ELT(FLOOR(1 + RAND()*2),'EXPOSE','CLICK'),
+#                     IF(RAND()<0.5, CONCAT('关键词', FLOOR(RAND()*100)), NULL),
+#                     CONCAT('https:/referrer.com/page', FLOOR(RAND()*10)),
+#                     NOW()
+#                 );
+#             SET i = i + 1;
+#         END WHILE;
+# END;
+# //
+#
+# -- =====================================================================
+# -- 10. 用户搜索日志 ods_event_search
+# -- =====================================================================
+# CREATE PROCEDURE fill_event_search()
+# BEGIN
+#     DECLARE i INT DEFAULT 1;
+#     WHILE i <= 1000 DO
+#             INSERT INTO ods_event_search
+#             (user_id, date_key, search_time, keyword, result_count, click_count, etl_time)
+#             VALUES
+#                 (
+#                     IF(RAND()>0.2, FLOOR(1+RAND()*5000), NULL),
+#                     DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
+#                     DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
+#                     CONCAT('词', FLOOR(RAND()*1000)),
+#                     FLOOR(RAND()*500),
+#                     FLOOR(RAND()*10),
+#                     NOW()
+#                 );
+#             SET i = i + 1;
+#         END WHILE;
+# END;
+# //
+
+-- =====================================================================
+-- 11. 优惠券领取与使用日志
+-- =====================================================================
+CREATE PROCEDURE fill_event_coupon()
 BEGIN
     DECLARE i INT DEFAULT 1;
     WHILE i <= 1000 DO
-            INSERT INTO ods_event_listing
-            (user_id, item_id, date_key, event_time, page_type, action_type, keyword, referrer, etl_time)
+            INSERT INTO ods_event_coupon
+            (user_id, coupon_id, date_key, event_time, action_type, order_id, etl_time)
             VALUES
                 (
-                    IF(RAND()>0.2, FLOOR(1+RAND()*5000), NULL),
-                    FLOOR(1 + RAND()*2000),
+                    FLOOR(1 + RAND()*5000),
+                    FLOOR(1 + RAND()*100),
                     DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
                     DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
-                    ELT(FLOOR(1 + RAND()*3),'SEARCH','CATEGORY','RECOMMEND'),
-                    ELT(FLOOR(1 + RAND()*2),'EXPOSE','CLICK'),
-                    IF(RAND()<0.5, CONCAT('关键词', FLOOR(RAND()*100)), NULL),
-                    CONCAT('https://referrer.com/page', FLOOR(RAND()*10)),
+                    ELT(FLOOR(1+RAND()*2),'RECEIVE','USE'),
+                    IF(RAND()>0.5, FLOOR(100000+RAND()*1000), NULL),
                     NOW()
                 );
             SET i = i + 1;
@@ -561,147 +608,99 @@ END;
 //
 
 -- =====================================================================
--- 10. 用户搜索日志 ods_event_search
+-- 12. 商品分享日志
 -- =====================================================================
-CREATE PROCEDURE fill_event_search()
+CREATE PROCEDURE fill_event_share()
 BEGIN
     DECLARE i INT DEFAULT 1;
-            WHILE i <= 1000 DO
-                    INSERT INTO ods_event_search
-                    (user_id, date_key, search_time, keyword, result_count, click_count, etl_time)
-                    VALUES
-                        (
-                            IF(RAND()>0.2, FLOOR(1+RAND()*5000), NULL),
-                            DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
-                            DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
-                            CONCAT('词', FLOOR(RAND()*1000)),
-                            FLOOR(RAND()*500),
-                            FLOOR(RAND()*10),
-                            NOW()
-                        );
-                    SET i = i + 1;
-                END WHILE;
-        END;
-    //
-
-    -- =====================================================================
--- 11. 优惠券领取与使用日志 ods_event_coupon
--- =====================================================================
-    CREATE PROCEDURE fill_event_coupon()
-    BEGIN
-        DECLARE i INT DEFAULT 1;
-        WHILE i <= 1000 DO
-                INSERT INTO ods_event_coupon
-                (user_id, coupon_id, date_key, event_time, action_type, order_id, etl_time)
-                VALUES
-                    (
-                        FLOOR(1 + RAND()*5000),
-                        FLOOR(1 + RAND()*100),
-                        DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
-                        DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
-                        ELT(FLOOR(1+RAND()*2),'RECEIVE','USE'),
-                        IF(RAND()>0.5, FLOOR(100000+RAND()*1000), NULL),
-                        NOW()
-                    );
-                SET i = i + 1;
-            END WHILE;
-    END;
-    //
-
-    -- =====================================================================
--- 12. 商品分享日志 ods_event_share
--- =====================================================================
-    CREATE PROCEDURE fill_event_share()
-    BEGIN
-        DECLARE i INT DEFAULT 1;
-        WHILE i <= 1000 DO
-                INSERT INTO ods_event_share
-                (user_id, item_id, date_key, share_time, channel, etl_time)
-                VALUES
-                    (
-                        FLOOR(1 + RAND()*5000),
-                        FLOOR(1 + RAND()*2000),
-                        DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
-                        DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
-                        ELT(FLOOR(1+RAND()*3),'WeChat','Weibo','QQ'),
-                        NOW()
-                    );
-                SET i = i + 1;
-            END WHILE;
-    END;
-    //
-
-    -- =====================================================================
--- 13. 店铺访问与收藏日志 ods_event_shop
--- =====================================================================
-    CREATE PROCEDURE fill_event_shop()
-    BEGIN
-        DECLARE i INT DEFAULT 1;
-        WHILE i <= 1000 DO
-                INSERT INTO ods_event_shop
-                (user_id, shop_id, date_key, event_time, action_type, referrer, etl_time)
-                VALUES
-                    (
-                        FLOOR(1 + RAND()*5000),
-                        FLOOR(1 + RAND()*500),
-                        DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
-                        DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
-                        ELT(FLOOR(1+RAND()*3),'VISIT','FAVORITE','UNFAVORITE'),
-                        CONCAT('https://shopref.com/', FLOOR(RAND()*10)),
-                NOW()
-            );
-        SET i = i + 1;
-    END WHILE;
+    WHILE i <= 1000 DO
+            INSERT INTO ods_event_share
+            (user_id, item_id, date_key, share_time, channel, etl_time)
+            VALUES
+                (
+                    FLOOR(1 + RAND()*5000),
+                    FLOOR(1 + RAND()*2000),
+                    DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
+                    DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
+                    ELT(FLOOR(1+RAND()*3),'WeChat','Weibo','QQ'),
+                    NOW()
+                );
+            SET i = i + 1;
+        END WHILE;
 END;
 //
 
--- =====================================================================
--- 14. 交易关闭与支付失败日志 ods_event_trade_status
--- =====================================================================
-CREATE PROCEDURE fill_event_trade_status()
-BEGIN
-    DECLARE i INT DEFAULT 1;
-                WHILE i <= 1000 DO
-                        INSERT INTO ods_event_trade_status
-                        (order_id, user_id, date_key, event_time, status_type, remark, etl_time)
-                        VALUES
-                            (
-                                FLOOR(100000 + RAND()*1000),
-                                FLOOR(1 + RAND()*5000),
-                                DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
-                                DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
-                                ELT(FLOOR(1+RAND()*3),'CLOSE_TIMEOUT','CLOSE_USER','PAY_FAIL'),
-                                IF(RAND()>0.5, '用户主动关闭', '支付渠道失败'),
-                                NOW()
-                            );
-                        SET i = i + 1;
-                    END WHILE;
-            END;
-        //
+# -- =====================================================================
+# -- 13. 店铺访问与收藏日志
+# -- =====================================================================
+# CREATE PROCEDURE fill_event_shop()
+# BEGIN
+#     DECLARE i INT DEFAULT 1;
+#     WHILE i <= 1000 DO
+#             INSERT INTO ods_event_shop
+#             (user_id, shop_id, date_key, event_time, action_type, referrer, etl_time)
+#             VALUES
+#                 (
+#                     FLOOR(1 + RAND()*5000),
+#                     FLOOR(1 + RAND()*500),
+#                     DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
+#                     DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
+#                     ELT(FLOOR(1+RAND()*3),'VISIT','FAVORITE','UNFAVORITE'),
+#                     CONCAT('https:/shopref.com/', FLOOR(RAND()*10)),
+#                     NOW()
+#                 );
+#             SET i = i + 1;
+#         END WHILE;
+# END;
+# //
+#
+# -- =====================================================================
+# -- 14. 交易关闭与支付失败日志
+# -- =====================================================================
+# CREATE PROCEDURE fill_event_trade_status()
+# BEGIN
+#     DECLARE i INT DEFAULT 1;
+#     WHILE i <= 1000 DO
+#             INSERT INTO ods_event_trade_status
+#             (order_id, user_id, date_key, event_time, status_type, remark, etl_time)
+#             VALUES
+#                 (
+#                     FLOOR(100000 + RAND()*1000),
+#                     FLOOR(1 + RAND()*5000),
+#                     DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
+#                     DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
+#                     ELT(FLOOR(1+RAND()*3),'CLOSE_TIMEOUT','CLOSE_USER','PAY_FAIL'),
+#                     IF(RAND()>0.5, '用户主动关闭', '支付渠道失败'),
+#                     NOW()
+#                 );
+#             SET i = i + 1;
+#         END WHILE;
+# END;
+# //
 
-        -- =====================================================================
--- 15. 物流节点事件日志 ods_event_logistics
 -- =====================================================================
-        CREATE PROCEDURE fill_event_logistics()
-        BEGIN
-            DECLARE i INT DEFAULT 1;
-            WHILE i <= 1000 DO
-                    INSERT INTO ods_event_logistics
-                    (order_id, date_key, event_time, stage, location, etl_time)
-                    VALUES
-                        (
-                            FLOOR(100000 + RAND()*1000),
-                            DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
-                            DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
-                            ELT(FLOOR(1+RAND()*4),'SHIP','PICKUP','IN_TRANSIT','DELIVERED'),
-                            CONCAT('Hub-', FLOOR(RAND()*50)),
-                            NOW()
-                        );
-                    SET i = i + 1;
-                END WHILE;
-        END;
-        //
-
+-- 15. 物流节点事件日志
+-- =====================================================================
+# CREATE PROCEDURE fill_event_logistics()
+# BEGIN
+#     DECLARE i INT DEFAULT 1;
+#     WHILE i <= 1000 DO
+#             INSERT INTO ods_event_logistics
+#             (order_id, date_key, event_time, stage, location, etl_time)
+#             VALUES
+#                 (
+#                     FLOOR(100000 + RAND()*1000),
+#                     DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), '%Y%m%d')+0,
+#                     DATE_ADD(DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*30) DAY), INTERVAL FLOOR(RAND()*86400) SECOND),
+#                     ELT(FLOOR(1+RAND()*4),'SHIP','PICKUP','IN_TRANSIT','DELIVERED'),
+#                     CONCAT('Hub-', FLOOR(RAND()*50)),
+#                     NOW()
+#                 );
+#             SET i = i + 1;
+#         END WHILE;
+# END;
+# //
+#
 -- 恢复分隔符
 DELIMITER ;
 
