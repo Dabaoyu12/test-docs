@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
 
 
-    
+
     <modules>
         <module>stream-common</module>
         <module>work_order</module>

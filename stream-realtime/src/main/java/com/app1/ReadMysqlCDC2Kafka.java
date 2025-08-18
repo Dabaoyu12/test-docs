@@ -1,4 +1,4 @@
-package com;
+package com.app1;
 
 import com.stream.common.utils.ConfigUtils;
 import com.stream.common.utils.KafkaUtils;
