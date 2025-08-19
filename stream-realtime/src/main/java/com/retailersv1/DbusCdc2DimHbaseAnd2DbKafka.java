@@ -9,6 +9,7 @@ import com.stream.common.utils.KafkaUtils;
 import com.stream.utils.CdcSourceUtils;
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;
+import com.ververica.cdc.debezium.StringDebeziumDeserializationSchema;
 import lombok.SneakyThrows;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.state.MapStateDescriptor;
@@ -19,12 +20,6 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 
-/**
- * @Package com.retailersv1.DbusCdc2DimHbaseAnd2DbKafka
- * @Author zhou.han
- * @Date 2024/12/12 12:56
- * @description: mysql db cdc to kafka realtime_db topic Task-01
- */
 public class DbusCdc2DimHbaseAnd2DbKafka {
 
     private static final String CDH_ZOOKEEPER_SERVER = ConfigUtils.getString("zookeeper.server.host.list");
@@ -45,20 +40,30 @@ public class DbusCdc2DimHbaseAnd2DbKafka {
                 "",
                 ConfigUtils.getString("mysql.user"),
                 ConfigUtils.getString("mysql.pwd"),
-                StartupOptions.initial()
+                StartupOptions.initial(),
+                "5401-5500"   // 主库 Source 的 serverId 范围
         );
 
-        // 读取配置库的变化binlog
         MySqlSource<String> mySQLCdcDimConfSource = CdcSourceUtils.getMySQLCdcSource(
                 ConfigUtils.getString("mysql.databases.conf"),
                 "realtime_v1_config.table_process_dim",
                 ConfigUtils.getString("mysql.user"),
                 ConfigUtils.getString("mysql.pwd"),
-                StartupOptions.initial()
+                StartupOptions.initial(),
+                "5501-5600"   // 配置库 Source 的 serverId 范围
         );
 
-        DataStreamSource<String> cdcDbMainStream = env.fromSource(mySQLDbMainCdcSource, WatermarkStrategy.noWatermarks(), "mysql_cdc_main_source");
-        DataStreamSource<String> cdcDbDimStream = env.fromSource(mySQLCdcDimConfSource, WatermarkStrategy.noWatermarks(), "mysql_cdc_dim_source");
+        DataStreamSource<String> cdcDbMainStream = env.fromSource(
+                mySQLDbMainCdcSource,
+                WatermarkStrategy.noWatermarks(),
+                "mysql_cdc_main_source"
+        ).setParallelism(1);
+
+        DataStreamSource<String> cdcDbDimStream = env.fromSource(
+                mySQLCdcDimConfSource,
+                WatermarkStrategy.noWatermarks(),
+                "mysql_cdc_dim_source"
+        ).setParallelism(1);
 
         SingleOutputStreamOperator<JSONObject> cdcDbMainStreamMap = cdcDbMainStream.map(JSONObject::parseObject)
                 .uid("db_data_convert_json")
