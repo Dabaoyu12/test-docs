@@ -21,7 +21,7 @@ public class CdcSourceUtils {
             String username,
             String pwd,
             StartupOptions model,
-            String serverIdRange   // <<< 新增参数
+            String serverIdRange
     ){
         Properties debeziumProperties = new Properties();
         debeziumProperties.setProperty("database.connectionCharset", "UTF-8");
