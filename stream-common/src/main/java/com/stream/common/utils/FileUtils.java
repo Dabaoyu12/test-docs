@@ -1,10 +1,12 @@
 package com.stream.common.utils;
 
 import com.alibaba.fastjson.JSONObject;
+import org.apache.hadoop.hbase.ClassFinder;
 
 import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Properties;
 
 /**
  * @Package com.stream.common.utils.FileUtils

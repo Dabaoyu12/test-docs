@@ -1,16 +1,22 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>groupId</groupId>
-        <artifactId>stream-test-docs</artifactId>
+        <groupId>org.example</groupId>
+        <artifactId>stream-flink-main</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>com.dby</groupId>
     <artifactId>stream-common</artifactId>
+    <packaging>jar</packaging>
+
+    <name>stream-common</name>
+    <url>http://maven.apache.org</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
     <repositories>
         <repository>
             <id>cloudera</id>
@@ -23,6 +29,12 @@
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
+        </dependency>
+        <!-- 在pom.xml中添加RocksDB依赖 -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-statebackend-rocksdb</artifactId>
+            <version>${flink.version}</version>
         </dependency>
 
         <dependency>
@@ -116,6 +128,12 @@
             <artifactId>hadoop-client</artifactId>
             <version>${hadoop.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-jdbc</artifactId>
+            <version>3.1.1-1.17</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>
