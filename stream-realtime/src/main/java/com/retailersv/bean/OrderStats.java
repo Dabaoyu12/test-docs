@@ -1,6 +1,5 @@
 package com.retailersv.bean;
 
-import com.stream.common.utils.ClickHouseUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

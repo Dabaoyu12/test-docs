@@ -1,4 +1,4 @@
-//package com.dim;
+package com.dim;//package com.dim;
 //
 //import com.alibaba.fastjson.JSONObject;
 //import com.stream.common.utils.HbaseUtils;

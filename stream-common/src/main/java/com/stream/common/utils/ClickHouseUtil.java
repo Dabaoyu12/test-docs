@@ -6,10 +6,10 @@ import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
-import java.lang.reflect.Field;
-import java.sql.PreparedStatement;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.Field;
+import java.sql.PreparedStatement;
 
 /**
  * ClickHouse 工具类：提供通用 SinkFunction 和建表方法

@@ -1,13 +1,8 @@
 package com.stream.common.utils;
 
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.google.common.collect.Lists;
-import com.stream.common.domain.HBaseInfo;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter;
@@ -17,11 +12,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.Executors;
-
-import static org.apache.hadoop.hbase.CellUtil.cloneQualifier;
-import static org.apache.hadoop.hbase.CellUtil.cloneValue;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
 
 
 public class HbaseUtils {

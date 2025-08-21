@@ -1,12 +1,3 @@
-import java.util.HashMap;
-import java.util.Map;
-
-/**
- * @Package PACKAGE_NAME.StrTest
- * @Author zhou.han
- * @Date 2024/11/29 15:33
- * @description: null
- */
 public class StrTest {
 
     private static int[] staticArray = new int[5];
