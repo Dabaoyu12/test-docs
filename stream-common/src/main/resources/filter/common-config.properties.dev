@@ -3,9 +3,9 @@ env=dev
 # MySQL 本地开发配置
 mysql.host=192.168.200.101
 mysql.port=3306
-mysql.url=jdbc:mysql://cdh01:3306/realtime_v1?useSSL=false&serverTimezone=Asia/Shanghai
+mysql.url=jdbc:mysql://cdh01:3306/test?useSSL=false&serverTimezone=Asia/Shanghai
 mysql.timezone=Asia/Shanghai
-mysql.database=realtime_v1
+mysql.database=test
 mysql.databases.conf=realtime_v1_config
 mysql.user=root
 mysql.pwd=123456

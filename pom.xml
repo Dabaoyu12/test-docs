@@ -86,6 +86,14 @@
                 <version>${flink.version}</version>
             </dependency>
 
+            <!--        doris依赖    -->
+            <dependency>
+                <groupId>org.apache.doris</groupId>
+                <artifactId>flink-doris-connector</artifactId>
+                <version>1.0.3</version>
+            </dependency>
+
+
             <!--        flink RocksDB 依赖-->
             <dependency>
                 <groupId>org.apache.flink</groupId>
@@ -276,6 +284,46 @@
                 <version>1.8.0</version>
             </dependency>
             <!-- parquet 文件格式相关依赖 结束 -->
+
+            <!-- hive 依赖           -->
+
+            <dependency>
+                <groupId>org.apache.hive</groupId>
+                <artifactId>hive-exec</artifactId>
+                <version>2.1.1-cdh6.3.2</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.hive</groupId>
+                <artifactId>hive-metastore</artifactId>
+                <version>2.1.1-cdh6.3.2</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-mapred</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+
+            <!-- Hadoop MapReduce Client - Core -->
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-mapreduce-client-core</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+
+            <!-- Hadoop MapReduce Client - JobClient -->
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-mapred-client-jobclient</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
 
             <!-- mysql 相关依赖 开始 -->
 

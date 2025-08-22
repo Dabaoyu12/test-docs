@@ -95,16 +95,12 @@ public class DbusLogDataProcess2Kafka {
 
                     @Override
                     public void open(Configuration parameters){
-                        // 值状态
                         ValueStateDescriptor<String> valueStateDescriptor = new ValueStateDescriptor<>(
-                                "lastVisitDateState", // 状态名称，用于在状态后端中标识该状态
-                                String.class  // 状态存储的数据类型
+                                "lastVisitDateState",
+                                String.class
                         );
-                        // 2. 为状态设置过期时间（TTL，Time-To-Live）
-                        // 当状态超过指定时间未更新时，会被自动清理，避免状态无限增长
                         valueStateDescriptor.enableTimeToLive(
                                 StateTtlConfig.newBuilder(Time.seconds(10))
-                                        // 状态更新策略：创建或写入时重置过期时间
                                         .setUpdateType(StateTtlConfig.UpdateType.OnCreateAndWrite)
                                         .build());
                         lastVisitDateState = getRuntimeContext().getState(valueStateDescriptor);
@@ -119,20 +115,15 @@ public class DbusLogDataProcess2Kafka {
                         Long ts = jsonObject.getLong("ts");
                         String curVisitDate = DateTimeUtils.tsToDate(ts);
                         if ("1".equals(isNew)) {
-                            //如果键控状态为null，认为本次是该访客首次访问 APP，将日志中 ts 对应的日期更新到状态中，不对 is_new 字段做修改；
                             if (StringsUtils.isEmpty(lastVisitDate)) {
                                 lastVisitDateState.update(curVisitDate);
                             } else {
-                                //如果键控状态不为null，且首次访问日期不是当日，说明访问的是老访客，将 is_new 字段置为 0；
                                 if (!lastVisitDate.equals(curVisitDate)) {
                                     isNew = "0";
                                     jsonObject.getJSONObject("common").put("is_new", isNew);
                                 }
                             }
                         } else {
-                            //如果 is_new 的值为 0
-                            //	如果键控状态为 null，说明访问 APP 的是老访客但本次是该访客的页面日志首次进入程序。当前端新老访客状态标记丢失时
-                            //日志进入程序被判定为新访客，Flink 程序就可以纠正被误判的访客状态标记，只要将状态中的日期设置为今天之前即可。本程序选择将状态更新为昨日；
                             if (StringsUtils.isEmpty(lastVisitDate)) {
                                 String yesDay = DateTimeUtils.tsToDate(ts - 24 * 60 * 60 * 1000);
                                 lastVisitDateState.update(yesDay);
