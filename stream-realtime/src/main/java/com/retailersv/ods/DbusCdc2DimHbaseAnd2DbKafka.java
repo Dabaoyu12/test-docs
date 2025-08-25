@@ -74,6 +74,7 @@ public class DbusCdc2DimHbaseAnd2DbKafka {
 
         // 读取业务数据库 CDC 数据
         DataStreamSource<String> cdcDbMainStream = env.fromSource(
+
                 mySQLDbMainCdcSource, WatermarkStrategy.noWatermarks(), "mysql_cdc_main_source");
 
         // 读取配置表 CDC 数据
