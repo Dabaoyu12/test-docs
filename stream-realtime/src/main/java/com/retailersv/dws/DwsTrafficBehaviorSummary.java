@@ -26,7 +26,7 @@ public class DwsTrafficBehaviorSummary {
         // 1. 环境准备：获取执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(4); // 并行度（按集群资源调整）
-        env.getCheckpointConfig().setCheckpointStorage("file:///D:/tmp/flink-dws"); // 本地测试 checkpoint 目录
+        env.getCheckpointConfig().setCheckpointStorage("file:///D:/tmp/flink-dws");
 
         // 2. 从 Kafka 读取各类 DWD 流（均为 JSON 字符串）
         String kafkaServer = "cdh01:9092"; // Kafka broker 地址
@@ -85,16 +85,12 @@ public class DwsTrafficBehaviorSummary {
                             return json;
                         }),
                         // 3.4 合并 action 流：注意大多数埋点结构为 actions 数组
-                        // 这里代码假设存在单个 "action" 对象，若为 "actions" 数组，需在此处 flatMap 展开
                         actionStream.map(JSON::parseObject).map(json -> {
                             json.put("event_type", "action");
                             // 取通用字段 common.mid
                             JSONObject common = json.getJSONObject("common");
-                            // ⚠️ 注意：常见结构是 "actions": [ {action_id, item, ts, ...}, ... ]
-                            // 你当前代码使用的是 "action" 单对象；如果实际为数组需要改为遍历。
                             JSONObject action = json.getJSONObject("action");
                             json.put("mid", common.getString("mid"));
-                            // 行为时间戳通常在 action(s) 内部
                             json.put("event_ts", action.getLongValue("ts"));
                             return json;
                         })
@@ -113,14 +109,13 @@ public class DwsTrafficBehaviorSummary {
                                 .build()
                 )
                 .setKafkaProducerConfig(new Properties() {{ // 生产者额外参数
-                    put(ProducerConfig.ACKS_CONFIG, "all"); // 最强一致性，等待所有副本确认
+                    put(ProducerConfig.ACKS_CONFIG, "all"); // 一致性
                 }})
                 .build();
 
-        // 6. 序列化为字符串写出到 Kafka
+
         unifiedStream.map(JSON::toJSONString).sinkTo(kafkaSink);
 
-        // 7. 启动作业
         env.execute("DWS Traffic Behavior Summary");
     }
 }

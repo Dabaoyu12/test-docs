@@ -21,7 +21,7 @@ public class AdsTradeStatsWindowJob {
         env.getCheckpointConfig().setCheckpointStorage("file:///D:/tmp/flink-ads"); // 本地测试路径
 
         // 2) 注册 Kafka 源表：消费 dwd_order_detail_enriched（已完成维度拉宽）
-        //    使用处理时间(proc_time)做窗口（方便演示；生产建议事件时间+watermark）
+        //    使用处理时间(proc_time)做窗口
         tableEnv.executeSql(
                 "CREATE TABLE dwd_order_detail_enriched (\n" +
                         "  sku_id STRING,\n" +
@@ -45,12 +45,11 @@ public class AdsTradeStatsWindowJob {
                         "  'json.ignore-parse-errors' = 'true'\n" +
                         ")"
         );
-        // 调试可打开：
-        // Table origin = tableEnv.sqlQuery("SELECT * FROM dwd_order_detail_enriched");
-        // tableEnv.toDataStream(origin).print("原始数据");
+
+         Table origin = tableEnv.sqlQuery("SELECT * FROM dwd_order_detail_enriched");
+         tableEnv.toDataStream(origin).print("原始数据");
 
         // 3) 下单窗口统计：按 sku_id 聚合（10s tumble）
-        //    注意：GROUP BY 中包含 category3_id、tm_id 是为了保证与其他统计维度一致（可选）
         Table orderStatsTable = tableEnv.sqlQuery(
                 "SELECT \n" +
                         "  DATE_FORMAT(window_start, 'yyyy-MM-dd HH:mm:ss') AS stt,\n" +
@@ -65,7 +64,7 @@ public class AdsTradeStatsWindowJob {
                         "WHERE event_type = 'order'\n" +
                         "GROUP BY window_start, window_end, sku_id, category3_id, tm_id"
         );
-        // tableEnv.toDataStream(orderStatsTable).print("order_stats");
+         tableEnv.toDataStream(orderStatsTable).print("order_stats");
 
         // 4) 支付窗口统计
         Table paymentStatsTable = tableEnv.sqlQuery(
@@ -124,7 +123,6 @@ public class AdsTradeStatsWindowJob {
         // tableEnv.toChangelogStream(resultStatsTable).print("enriched_trade_stats");
 
         // 8) 分别写入 ClickHouse（明细指标 + 汇总指标）
-        // 8.1 下单 sink
         tableEnv.toDataStream(orderStatsTable, OrderStats.class)
                 .addSink(ClickHouseUtil.getSink(
                         "INSERT INTO order_stats VALUES (?, ?, ?, ?, ?, ?, ?)"

@@ -22,16 +22,15 @@ public class AdsUserBehaviorWindowJob {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
 
-        // Checkpoint 存储目录（本地演示用；生产建议 HDFS/对象存储）
+        // Checkpoint 存储目录
         env.getCheckpointConfig().setCheckpointStorage("file:///D:/tmp/flink-ads");
-        env.setParallelism(2); // 并行度（按集群资源调整）
+        env.setParallelism(2); // 并行度
 
         // Table planner 参数微调（窗口聚合内存 & 默认并行度）
         tableEnv.getConfig().getConfiguration().setString("table.exec.window-agg.buffer-size.limit", "2000000");
         tableEnv.getConfig().getConfiguration().setString("table.exec.resource.default-parallelism", "2");
 
         // 2. 创建 Kafka 源表：消费 DWS 明细（统一 schema）
-        // 说明：
         //  - 使用 proctime 做窗口演示；生产建议使用事件时间 + WATERMARK
         tableEnv.executeSql(
                 "CREATE TABLE dws_user_action_enriched (\n" +
@@ -40,7 +39,7 @@ public class AdsUserBehaviorWindowJob {
                         "  page ROW<page_id STRING, last_page_id STRING, during_time BIGINT>,\n" +
                         "  display ROW<item STRING, item_type STRING, pos_id INT>,\n" +
                         "  ts BIGINT,\n" +
-                        "  proctime AS PROCTIME()\n" +   // 处理时间属性（演示用）
+                        "  proctime AS PROCTIME()\n" +
                         ") WITH (\n" +
                         "  'connector' = 'kafka',\n" +
                         "  'topic' = 'dws_user_action_enriched',\n" +
@@ -52,14 +51,12 @@ public class AdsUserBehaviorWindowJob {
                         ")"
         );
 
-        // 如需调试原始输入，可解开以下两行
-        // Table origin = tableEnv.sqlQuery("SELECT * FROM dws_user_action_enriched");
-        // tableEnv.toDataStream(origin).print("原始数据");
+         Table origin = tableEnv.sqlQuery("SELECT * FROM dws_user_action_enriched");
+         tableEnv.toDataStream(origin).print("原始数据");
 
         // 3. PV/UV 10s 窗口统计（按版本/渠道/地区/新老访客分组）
-        // 说明：
         //  - pv_ct：窗口内记录数（行数）
-        //  - uv_ct：窗口内去重用户数（distinct uid）
+        //  - uv_ct：窗口内去重用户数
         Table pvUvTable = tableEnv.sqlQuery(
                 "SELECT\n" +
                         "  DATE_FORMAT(window_start, 'yyyy-MM-dd HH:mm:ss') AS stt,\n" +
@@ -72,11 +69,10 @@ public class AdsUserBehaviorWindowJob {
                         ")\n" +
                         "GROUP BY window_start, window_end, common.vc, common.ch, common.ar, common.is_new"
         );
-        // 控制台预览（生产可关闭）
+
         tableEnv.toDataStream(pvUvTable).print("pv_uv");
 
         // 4. 会话指标 10s 窗口（以启动事件为准）
-        // 说明：
         //  - sv_ct：启动事件次数（近似会话数）
         //  - uj_ct：跳出会话数（page.last_page_id IS NULL 视为着陆页，无前页 → 近似跳出）
         Table sessionTable = tableEnv.sqlQuery(
@@ -95,10 +91,8 @@ public class AdsUserBehaviorWindowJob {
         tableEnv.toDataStream(sessionTable).print("session");
 
         // 5. 曝光/点击 10s 窗口（以 SKU、页面、渠道为维度）
-        // 说明：
         //  - disp_ct：曝光条数
-        //  - disp_sku_num：窗口内曝光过的去重 SKU 数（以 display.item 判定）
-        //  - 这里 WHERE 限定了 event_type IN ('display', 'click')，但示例并未单独输出 click 计数，如需 CTR 可扩展
+        //  - disp_sku_num：窗口内曝光过的去重 SKU 数
         Table displayClickTable = tableEnv.sqlQuery(
                 "SELECT\n" +
                         "  DATE_FORMAT(window_start, 'yyyy-MM-dd HH:mm:ss') AS stt,\n" +
@@ -116,7 +110,7 @@ public class AdsUserBehaviorWindowJob {
         );
         tableEnv.toDataStream(displayClickTable).print("disp_click");
 
-        // 6. 将三类窗口结果映射为 POJO 并写入 ClickHouse
+
         // 6.1 PV/UV -> ads_user_pv_uv_window
         DataStream<UserPvUvWindow> pvUvStream = tableEnv.toDataStream(pvUvTable, UserPvUvWindow.class);
         pvUvStream.addSink(ClickHouseUtil.getSink(

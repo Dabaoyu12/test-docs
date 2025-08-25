@@ -49,11 +49,10 @@ public class DbusCdc2DimHbaseAnd2DbKafka {
 
         // 开启 Checkpoint，每 10 秒一次
         env.enableCheckpointing(10000L);
-        // 设置 Checkpoint 存储路径（本地测试路径）
         env.getCheckpointConfig().setCheckpointStorage("file:///D:/tmp/flink-chk");
 
 
-        // ============= 1. 定义 MySQL CDC 源：业务数据库 =============
+        //  1. 定义 MySQL CDC 源：业务数据库 
         MySqlSource<String> mySQLDbMainCdcSource = CdcSourceUtils.getMySQLCdcSource(
                 ConfigUtils.getString("mysql.database"),   // 业务数据库
                 "",                                        // 表名（为空表示全部）
@@ -63,7 +62,7 @@ public class DbusCdc2DimHbaseAnd2DbKafka {
                 "20000-20050"                              // 分配 source 并行任务 ID 范围
         );
 
-        // ============= 2. 定义 MySQL CDC 源：配置数据库（维度表配置） =============
+        //  2. 定义 MySQL CDC 源：配置数据库（维度表配置） 
         MySqlSource<String> mySQLCdcDimConfSource = CdcSourceUtils.getMySQLCdcSource(
                 ConfigUtils.getString("mysql.databases.conf"), // 配置库
                 "realtime_v1_config.table_process_dim",        // 配置表
@@ -81,7 +80,7 @@ public class DbusCdc2DimHbaseAnd2DbKafka {
         DataStreamSource<String> cdcDbDimStream = env.fromSource(
                 mySQLCdcDimConfSource, WatermarkStrategy.noWatermarks(), "mysql_cdc_dim_source");
 
-        // ============= 3. 业务数据流：JSON 解析 + 写入 Kafka =============
+        //  3. 业务数据流：JSON 解析 + 写入 Kafka 
         SingleOutputStreamOperator<JSONObject> cdcDbMainStreamMap = cdcDbMainStream
                 .map(JSONObject::parseObject)  // String 转 JSONObject
                 .uid("db_data_convert_json")
@@ -97,7 +96,7 @@ public class DbusCdc2DimHbaseAnd2DbKafka {
         // 控制台打印业务数据（调试用）
         cdcDbMainStreamMap.print("cdcDbMainStreamMap ->");
 
-        // ============= 4. 配置数据流：JSON 解析 + 清洗 =============
+        //  4. 配置数据流：JSON 解析 + 清洗 
         SingleOutputStreamOperator<JSONObject> cdcDbDimStreamMap = cdcDbDimStream
                 .map(JSONObject::parseObject)
                 .uid("dim_data_convert_json")
@@ -119,7 +118,7 @@ public class DbusCdc2DimHbaseAnd2DbKafka {
                 }).uid("clean_json_column_map")
                 .name("_clean_json_column_map");
 
-        // ============= 5. 更新 HBase 维度表结构 =============
+        //  5. 更新 HBase 维度表结构 
         SingleOutputStreamOperator<JSONObject> tpDs = cdcDbDimStreamMapCleanColumn.map(
                         new MapUpdateHbaseDimTableFunc(CDH_ZOOKEEPER_SERVER, CDH_HBASE_NAME_SPACE))
                 .uid("map_create_hbase_dim_table")

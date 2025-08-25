@@ -31,13 +31,7 @@ import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-/**
- * DWS 用户行为明细拉宽：
- * - 消费 dws_user_action_detail（start/page/display/action 的统一明细）
- * - JSON 清洗 + 脏数据侧输出
- * - 异步关联多张 HBase 维表（sku / 品牌 / 类目 / 用户）
- * - 输出 Enriched 明细到 Kafka（dws_user_action_enriched）
- */
+
 public class DwsUserActionDetailEnrich {
     public static void main(String[] args) throws Exception {
         // 1. Flink 环境准备（并行度、重启、checkpoint 等在工具类里统一设置）
@@ -62,7 +56,6 @@ public class DwsUserActionDetailEnrich {
                     @Override
                     public void processElement(String value, Context ctx, Collector<JSONObject> out) {
                         try {
-                            // 解析 JSON（不做 schema 校验，异常统一丢到侧输出）
                             JSONObject json = JSONObject.parseObject(value);
                             out.collect(json); // 主流
                         } catch (Exception e) {
@@ -82,7 +75,7 @@ public class DwsUserActionDetailEnrich {
         stream = (SingleOutputStreamOperator<JSONObject>) asyncJoin(stream, "dim_base_category3", "category3_id");
         stream = (SingleOutputStreamOperator<JSONObject>) asyncJoin(stream, "dim_user_info", "uid");
 
-        // 调试打印（生产可移除或降采样）
+        // 调试打印
         stream.print();
 
         // 5. 输出主流到 Kafka（Enriched 结果）
@@ -103,7 +96,7 @@ public class DwsUserActionDetailEnrich {
         env.execute("DwsUserActionDetailEnrich");
     }
 
-    /**
+    /*
      * 通用异步维度拉宽：
      * - 从 input JSON 中提取 joinKey（顶层/common/display）
      * - 使用 HBase Get 查询维度行，合并列为 JSON 字段
@@ -133,7 +126,7 @@ public class DwsUserActionDetailEnrich {
                             } else if (input.containsKey("common")) {
                                 key = input.getJSONObject("common").getString(joinKey); // common 中的 id（如 uid）
                             } else if (input.containsKey("display")) {
-                                // 曝光结构若是 displays 数组，需在上游打平，这里只是兜底尝试
+                                // displays 数组上游打平
                                 key = input.getJSONObject("display").getString("item");
                             }
 
@@ -164,7 +157,7 @@ public class DwsUserActionDetailEnrich {
                                                             cell.getValueOffset(),
                                                             cell.getValueLength());
                                                     if (col != null && val != null) {
-                                                        // 不加前缀：直接平铺到主 JSON；如需避免覆盖，可改为 "dim_"+col
+                                                        // 不加前缀 直接平铺到主 JSON
                                                         dimJson.put(col, val);
                                                     }
                                                 });
@@ -194,7 +187,7 @@ public class DwsUserActionDetailEnrich {
                     }
                 },
                 60, TimeUnit.SECONDS, // 每次异步调用超时（可按 HBase 延迟调整）
-                100                   // 最大并发异步请求（与 HBase/QPS/线程池能力匹配）
+                100                   // 最大并发异步请求（与 HBase/线程池能力匹配）
         );
     }
 }
