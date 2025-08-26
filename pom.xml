@@ -16,6 +16,7 @@
         <module>work_order</module>
         <module>stream-realtime</module>
         <module>stream-common</module>
+        <module>work_order_05</module>
     </modules>
 
     <properties>
