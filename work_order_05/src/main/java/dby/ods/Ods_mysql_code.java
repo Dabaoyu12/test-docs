@@ -10,10 +10,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
-/**
- * 模拟 ODS 数据写入 MySQL + JSON 格式写入 Kafka（完整字段）
- * UUID 改为前缀+数字，自增ID使用 BIGINT AUTO_INCREMENT
- */
 public class Ods_mysql_code {
 
     // ====== 配置 ======

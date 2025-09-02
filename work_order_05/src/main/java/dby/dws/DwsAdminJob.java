@@ -5,14 +5,13 @@ import com.ververica.cdc.debezium.JsonDebeziumDeserializationSchema;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
-import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.api.common.serialization.SimpleStringSchema;
 
-public class DwsAsyncKafkaJob {
+import java.util.Properties;
+
+public class DwsAdminJob {
 
     public static void main(String[] args) throws Exception {
         // 1. 执行环境
@@ -44,35 +43,46 @@ public class DwsAsyncKafkaJob {
                 "MySQL Source"
         );
 
-        // 3. 示例逻辑：统计数量
-        SingleOutputStreamOperator<Tuple3<String, String, Long>> metrics = sourceStream
+        // 3. 业务逻辑示例：加购件数 Top50
+        SingleOutputStreamOperator<Tuple3<String, String, Long>> cartCnt = sourceStream
                 .map(o -> {
-
-                    return new Tuple3<>("shop1", "item1", 1L);
+                    String shopId = "shop1";
+                    String itemId = "item1";
+                    Long quantity = 1L;
+                    return new Tuple3<>(shopId, itemId, quantity);
                 })
                 .returns(new TypeHint<Tuple3<String, String, Long>>() {})
                 .keyBy(t -> t.f0 + "_" + t.f1)
                 .sum(2);
 
-        SingleOutputStreamOperator<String> result = metrics
-                .map(t -> String.format(
-                        "{\"metric\":\"demo\",\"shopId\":\"%s\",\"itemId\":\"%s\",\"value\":%d}",
-                        t.f0, t.f1, t.f2));
+        SingleOutputStreamOperator<String> cartTop50 = cartCnt
+                .map(t -> toJsonMetric("cart_top50", t.f0, t.f1, t.f2));
 
-        // 4. Kafka Sink
-        KafkaSink<String> kafkaSink = KafkaSink.<String>builder()
-                .setBootstrapServers("cdh01:9092")
-                .setRecordSerializer(
-                        KafkaRecordSerializationSchema.builder()
-                                .setTopic("dws_metrics")
-                                .setValueSerializationSchema(new SimpleStringSchema())
-                                .build()
-                )
-                .build();
+        // 4. 支付金额 Top50
+        SingleOutputStreamOperator<Tuple3<String, String, Long>> payAmount = sourceStream
+                .map(o -> {
+                    String shopId = "shop1";
+                    String itemId = "item1";
+                    Long pay = 100L;
+                    Long refund = 0L;
+                    return new Tuple3<>(shopId, itemId, pay - refund);
+                })
+                .returns(new TypeHint<Tuple3<String, String, Long>>() {})
+                .keyBy(t -> t.f0 + "_" + t.f1)
+                .sum(2);
 
-        // 5. 写入 Kafka
-        result.sinkTo(kafkaSink);
+        SingleOutputStreamOperator<String> payTop50 = payAmount
+                .map(t -> toJsonMetric("pay_top50", t.f0, t.f1, t.f2));
+
+        // 5. 输出到控制台
+        cartTop50.print("CartTop50");
+        payTop50.print("PayTop50");
 
         env.execute("DwsAdminJob");
+    }
+
+    private static String toJsonMetric(String metric, String shopId, String itemId, Long value) {
+        return String.format("{\"metric\":\"%s\",\"shopId\":\"%s\",\"itemId\":\"%s\",\"value\":%d}",
+                metric, shopId, itemId, value);
     }
 }

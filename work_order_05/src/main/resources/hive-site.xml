@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!--
+  Hive Site Configuration for Flink integration
+  Replace the values below with your actual cluster settings
+-->
+<configuration>
+
+    <!-- Hive Metastore URI: required for remote metastore (cannot use embedded) -->
+    <property>
+        <name>hive.metastore.uris</name>
+        <value>thrift://cdh01:9083</value>
+        <description>Thrift URI for the remote Hive Metastore service</description>
+    </property>
+
+    <!-- Default warehouse directory for Hive tables -->
+    <property>
+        <name>hive.metastore.warehouse.dir</name>
+        <value>/user/hive/warehouse</value>
+        <description>HDFS directory for Hive managed tables</description>
+    </property>
+
+    <!-- Execution engine for Hive queries -->
+    <property>
+        <name>hive.execution.engine</name>
+        <value>mr</value>
+        <description>Hive execution engine (mr, tez, spark)</description>
+    </property>
+
+    <!-- Enable support for dynamic partition inserts -->
+    <property>
+        <name>hive.exec.dynamic.partition</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>hive.exec.dynamic.partition.mode</name>
+        <value>nonstrict</value>
+    </property>
+
+    <!-- Default filesystem -->
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://cdh01:8020</value>
+    </property>
+
+    <!-- Hive metastore connection pool -->
+    <property>
+        <name>datanucleus.connectionPoolingType</name>
+        <value>DBCP</value>
+    </property>
+
+    <!-- JDBC connection settings for Hive Metastore DB -->
+    <property>
+        <name>javax.jdo.option.ConnectionURL</name>
+        <value>jdbc:mysql://cdh01:3306/hive_metastore?createDatabaseIfNotExist=true</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionDriverName</name>
+        <value>com.mysql.jdbc.Driver</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionUserName</name>
+        <value>hive_user</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionPassword</name>
+        <value>hive_password</value>
+    </property>
+
+    <!-- Other common Hive settings -->
+    <property>
+        <name>hive.exec.compress.output</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>hive.support.concurrency</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>hive.enforce.bucketing</name>
+        <value>false</value>
+    </property>
+
+</configuration>
